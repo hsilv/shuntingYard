@@ -60,3 +60,26 @@ TreeNode *constructSyntaxTree(Stack<shuntingToken> *postfix)
 
     return treeStack.pop();
 }
+
+void print2DUtil(TreeNode *root, int space)
+{
+    const int COUNT = 10;
+    if (root == NULL)
+        return;
+
+    space += COUNT;
+
+    print2DUtil(root->right, space);
+
+    wcout << endl;
+    for (int i = COUNT; i < space; i++)
+        wcout << L" ";
+    wcout << root->value->token << L"\n";
+
+    print2DUtil(root->left, space);
+}
+
+void print2D(TreeNode *root)
+{
+    print2DUtil(root, 0);
+}

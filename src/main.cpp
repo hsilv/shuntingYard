@@ -21,6 +21,7 @@ int main(int argc, char *argv[])
     {
         postfix = shuntingYard(wide_cstr);
         TreeNode *tree = constructSyntaxTree(&postfix);
+        print2D(tree);
     }
     catch (const exception &e)
     {

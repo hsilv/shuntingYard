@@ -18,5 +18,7 @@ struct TreeNode
 TreeNode *createNode(shuntingToken *value);
 void deleteNode(TreeNode *node);
 TreeNode *constructSyntaxTree(Stack<shuntingToken> *postfix);
+void print2DUtil(TreeNode *root, int space);
+void print2D(TreeNode *root);
 
 #endif
