@@ -5,12 +5,14 @@
 #include <string.h>
 #include <iostream>
 #include <nlohmann/json.hpp>
+#include <locale>
+#include <codecvt>
 
 using namespace std;
 
 struct shuntingToken
 {
-    char *token;
+    wchar_t *token;
     int precedence;
     enum TokenType
     {
@@ -22,16 +24,16 @@ struct shuntingToken
     TokenType type;
 };
 
-int getPrecedence(const char *operatorToken);
+int getPrecedence(const wchar_t *operatorToken);
 
 const char *clean(char *&input);
 
-bool isOperand(const char *token);
+bool isOperand(const wchar_t *token);
 
-shuntingToken::TokenType getOperatorType(const char *token);
+shuntingToken::TokenType getOperatorType(const wchar_t *token);
 
-Stack<shuntingToken> getTokens(const char *&infix);
+Stack<shuntingToken> getTokens(const wchar_t *&infix);
 
-char *shuntingYard(const char *infix);
+Stack<shuntingToken> shuntingYard(const wchar_t *infix);
 
 #endif

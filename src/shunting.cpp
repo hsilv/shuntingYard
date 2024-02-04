@@ -2,23 +2,23 @@
 
 using namespace std;
 
-Stack<shuntingToken> operatorStack;
+extern Stack<shuntingToken> operatorStack;
 
-int getPrecedence(const char *operatorToken)
+int getPrecedence(const wchar_t *operatorToken)
 {
-    if (strcmp(operatorToken, "|") == 0)
+    if (wcscmp(operatorToken, L"|") == 0)
     {
         return 1;
     }
-    else if (strcmp(operatorToken, ".") == 0 || strcmp(operatorToken, "?") == 0)
+    else if (wcscmp(operatorToken, L".") == 0 || wcscmp(operatorToken, L"?") == 0)
     {
         return 2;
     }
-    else if (strcmp(operatorToken, "*") == 0 || strcmp(operatorToken, "+") == 0)
+    else if (wcscmp(operatorToken, L"*") == 0 || wcscmp(operatorToken, L"+") == 0)
     {
         return 3;
     }
-    else if (strcmp(operatorToken, "(") == 0 || strcmp(operatorToken, ")") == 0)
+    else if (wcscmp(operatorToken, L"(") == 0 || wcscmp(operatorToken, L")") == 0)
     {
         return 4;
     }
@@ -28,34 +28,31 @@ int getPrecedence(const char *operatorToken)
     }
 }
 
-const char *operators[] = {"+", "-", "*", "/", "^", "(", ")"};
-
-const char *clean(char *&input)
+const wchar_t *clean(wchar_t *&input)
 {
-    string output = "";
-    for (int i = 0; i < strlen(input); i++)
+    wstring output = L"";
+    for (int i = 0; i < wcslen(input); i++)
     {
         if (input[i] != ' ')
         {
             output += input[i];
         }
     }
-    return strdup(output.c_str());
+    return wcsdup(output.c_str());
 }
 
-// Determina si un caracter o token es un operador o no
-bool isOperand(const char *token)
+bool isOperand(const wchar_t *token)
 {
-    return !strchr("|*+?.()", token[0]);
+    return !wcschr(L"|*+?.()", token[0]);
 }
 
-shuntingToken::TokenType getOperatorType(const char *token)
+shuntingToken::TokenType getOperatorType(const wchar_t *token)
 {
-    if (strcmp(token, "(") == 0 || strcmp(token, ")") == 0)
+    if (wcscmp(token, L"(") == 0 || wcscmp(token, L")") == 0)
     {
         return shuntingToken::BRACKET;
     }
-    else if (strcmp(token, "*") == 0 || strcmp(token, "+") == 0 || strcmp(token, "?") == 0)
+    else if (wcscmp(token, L"*") == 0 || wcscmp(token, L"+") == 0 || wcscmp(token, L"?") == 0)
     {
         return shuntingToken::UNARY_OPERATOR;
     }
@@ -65,45 +62,45 @@ shuntingToken::TokenType getOperatorType(const char *token)
     }
 }
 
-Stack<shuntingToken> getTokens(const char *&infix)
+Stack<shuntingToken> getTokens(const wchar_t *&infix)
 {
     Stack<shuntingToken> tokens;
-    const int infixLength = strlen(infix);
+    const int infixLength = wcslen(infix);
 
     for (int i = 0; i < infixLength; i++)
     {
 
-        const char *actualChar = string(1, infix[i]).c_str();
-        const char *rightChar = string(1, infix[i + 1]).c_str();
+        const wchar_t *actualChar = wstring(1, infix[i]).c_str();
+        const wchar_t *rightChar = wstring(1, infix[i + 1]).c_str();
         if (isOperand(actualChar))
         {
             shuntingToken operand;
-            operand.token = strdup(actualChar);
+            operand.token = wcsdup(actualChar);
             operand.precedence = getPrecedence(actualChar);
             operand.type = shuntingToken::OPERAND;
             tokens.push(operand);
 
-            if (strcmp(rightChar, "") != 0 && isOperand(rightChar))
+            if (wcscmp(rightChar, L"") != 0 && isOperand(rightChar))
             {
                 shuntingToken operatorToken;
-                operatorToken.token = strdup(".");
-                operatorToken.precedence = getPrecedence(".");
-                operatorToken.type = getOperatorType(".");
+                operatorToken.token = wcsdup(L".");
+                operatorToken.precedence = getPrecedence(L".");
+                operatorToken.type = getOperatorType(L".");
                 tokens.push(operatorToken);
             }
-            else if (strcmp(rightChar, "(") == 0)
+            else if (wcscmp(rightChar, L"(") == 0)
             {
                 shuntingToken operatorToken;
-                operatorToken.token = strdup(".");
-                operatorToken.precedence = getPrecedence(".");
-                operatorToken.type = getOperatorType(".");
+                operatorToken.token = wcsdup(L".");
+                operatorToken.precedence = getPrecedence(L".");
+                operatorToken.type = getOperatorType(L".");
                 tokens.push(operatorToken);
             }
         }
         else
         {
             shuntingToken operatorToken;
-            operatorToken.token = strdup(actualChar);
+            operatorToken.token = wcsdup(actualChar);
             operatorToken.precedence = getPrecedence(actualChar);
             operatorToken.type = getOperatorType(actualChar);
             tokens.push(operatorToken);
@@ -111,9 +108,17 @@ Stack<shuntingToken> getTokens(const char *&infix)
             if (operatorToken.type == shuntingToken::UNARY_OPERATOR && isOperand(rightChar))
             {
                 shuntingToken concatToken;
-                concatToken.token = strdup(".");
-                concatToken.precedence = getPrecedence(".");
-                concatToken.type = getOperatorType(".");
+                concatToken.token = wcsdup(L".");
+                concatToken.precedence = getPrecedence(L".");
+                concatToken.type = getOperatorType(L".");
+                tokens.push(concatToken);
+            }
+            else if (wcscmp(operatorToken.token, L")") == 0 && isOperand(rightChar))
+            {
+                shuntingToken concatToken;
+                concatToken.token = wcsdup(L".");
+                concatToken.precedence = getPrecedence(L".");
+                concatToken.type = getOperatorType(L".");
                 tokens.push(concatToken);
             }
         }
@@ -122,12 +127,14 @@ Stack<shuntingToken> getTokens(const char *&infix)
     return tokens;
 }
 
-char *shuntingYard(const char *infix)
+Stack<shuntingToken> shuntingYard(const wchar_t *infix)
 {
     Stack<shuntingToken> tokens;
-    const char *cleanedInfix = (char *)clean((char *&)infix);
+    const wchar_t *cleanedInfix = (wchar_t *)clean((wchar_t *&)infix);
     tokens = getTokens(cleanedInfix);
-    cout << cleanedInfix << endl;
+    wcout << "\033[1;34m"
+          << "Shunting Yard Input"
+          << ": \033[0m" << cleanedInfix << endl;
 
     Stack<shuntingToken> aux;
     Stack<shuntingToken> output;
@@ -160,24 +167,24 @@ char *shuntingYard(const char *infix)
             }
             aux.push(o1);
         }
-        else if (strcmp(o1.token, "(") == 0)
+        else if (wcscmp(o1.token, L"(") == 0)
         {
             aux.push(o1);
         }
-        else if (strcmp(o1.token, ")") == 0)
+        else if (wcscmp(o1.token, L")") == 0)
         {
-            while (!aux.isEmpty() && strcmp(aux.getTop()->token, "(") != 0)
+            while (!aux.isEmpty() && wcscmp(aux.getTop()->token, L"(") != 0)
             {
                 output.push(aux.pop());
             }
 
-            if (!aux.isEmpty() && strcmp(aux.getTop()->token, "(") == 0)
+            if (!aux.isEmpty() && wcscmp(aux.getTop()->token, L"(") == 0)
             {
                 aux.pop();
             }
             else if (aux.isEmpty())
             {
-                throw std::invalid_argument("Mismatched parenthesis");
+                throw invalid_argument("Mismatched parenthesis");
             }
         }
     }
@@ -186,7 +193,7 @@ char *shuntingYard(const char *infix)
     {
         if (!aux.isEmpty() && aux.getTop()->type == shuntingToken::BRACKET)
         {
-            throw std::invalid_argument("Mismatched parenthesis");
+            throw invalid_argument("Mismatched parenthesis");
         }
         else
         {
@@ -196,12 +203,15 @@ char *shuntingYard(const char *infix)
 
     output.reverse();
 
-    for (int i = 0; output.getSize() > 0; i++)
+    wcout << "\033[1;34m"
+          << "Shunting Yard Output"
+          << ": \033[0m";
+    for (int i = 0; i < output.getSize(); i++)
     {
-        shuntingToken token = output.pop();
-        cout << token.token;
+        shuntingToken token = output.getTop()[-i];
+        wcout << token.token;
     }
 
-    cout << endl;
-    return 0;
+    wcout << endl;
+    return output;
 }
