@@ -113,7 +113,7 @@ Stack<shuntingToken> getTokens(const wchar_t *&infix)
                 concatToken.type = getOperatorType(L".");
                 tokens.push(concatToken);
             }
-            else if (wcscmp(operatorToken.token, L")") == 0 && isOperand(rightChar))
+            else if (wcscmp(operatorToken.token, L")") == 0 && (isOperand(rightChar) || wcscmp(rightChar, L"(") == 0))
             {
                 shuntingToken concatToken;
                 concatToken.token = wcsdup(L".");
