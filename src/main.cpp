@@ -7,6 +7,7 @@
 #include "thompson.h"
 #include "graphviz.h"
 #include "subsets.h"
+#include "direct.h"
 
 Stack<shuntingToken> postfix;
 
@@ -32,6 +33,10 @@ int main(int argc, char *argv[])
         Automata *subset = subsetConstruction(mcythompson);
         printAutomata(subset);
         generateGraph(subset, L"bysubsets");
+        wcout << "\n----------------------------------------\033[1;37m Por Construccion directa \033[0m----------------------------------------" << endl;
+        Automata *direct = directConstruction(tree, alphabet);
+        printAutomata(direct);
+        generateGraph(direct, L"bydirect");
     }
     catch (const exception &e)
     {

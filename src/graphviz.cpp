@@ -15,7 +15,7 @@ void generateGraph(Automata *automata, wstring filename)
 
     string dotScript = "digraph finite_state_machine {\n";
     dotScript += "rankdir=LR;\n";
-    dotScript += "size=\"20,20\"\n";
+    dotScript += "size=\"40,40\"\n";
     dotScript += "node [shape = plaintext]; qi [label=\"\"];\n";
     if (automata->start->isAcceptable)
     {

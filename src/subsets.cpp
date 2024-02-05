@@ -38,10 +38,7 @@ vector<AutomataState *> *move(vector<AutomataState *> *states, wchar_t *input)
     {
         for (int j = 0; j < states->at(i)->transitions.size(); j++)
         {
-            /* wcout << "Transition input: " << states->at(i)->transitions[j]->input << endl;
-            wcout << "Input: " << input << endl;
-            wcout << "From: " << states->at(i)->transitions[j]->from->name << endl;
-            wcout << "To: " << states->at(i)->transitions[j]->to->name << endl; */
+
             if (wcscmp(states->at(i)->transitions[j]->input, input) == 0)
             {
                 move->push_back(states->at(i)->transitions[j]->to);
@@ -139,6 +136,7 @@ void processState(StateSubset *subset, vector<StateSubset *> *subsets, wstring a
 
 Automata *subsetConstruction(Automata *automata)
 {
+
     Automata *AFD = new Automata;
     set<AutomataState *> visited;
     vector<AutomataState *> *initialState = epsilonClosure(automata->start, visited);
@@ -201,6 +199,12 @@ Automata *subsetConstruction(Automata *automata)
     AFD->states = *AFDStates;
     AFD->finalStates = *AFDFinalStates;
     AFD->transitions = *AFDTransitions;
+
+    size_t pos = AFD->alphabet.find(L'ε');
+    if (pos != std::wstring::npos)
+    {
+        AFD->alphabet.erase(pos, 1);
+    }
 
     return AFD;
 }
