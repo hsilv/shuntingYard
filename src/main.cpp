@@ -4,6 +4,7 @@
 #include <thread>
 #include "automata.h"
 #include "tree.h"
+#include "thompson.h"
 
 Stack<shuntingToken> postfix;
 
@@ -21,7 +22,8 @@ int main(int argc, char *argv[])
     {
         postfix = shuntingYard(wide_cstr);
         TreeNode *tree = constructSyntaxTree(&postfix);
-        print2D(tree);
+        /* print2D(tree); */
+        thompson(tree, getAlphabet(&postfix));
     }
     catch (const exception &e)
     {

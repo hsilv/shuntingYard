@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include "shunting.h"
 
 using namespace std;
 
@@ -32,5 +33,7 @@ struct Automata
     wstring alphabet;
     vector<AutomataTransition *> transitions;
 };
+
+wstring getAlphabet(Stack<shuntingToken> *postfix);
 
 #endif
