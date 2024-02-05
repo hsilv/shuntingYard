@@ -217,6 +217,25 @@ Automata *buildThompsonSnippet(TreeNode *node, wstring &alphabet, vector<Automat
             automata->states.push_back(end);
             automata->finalStates.push_back(end);
         }
+        else if (wcscmp(node->value->token, L"?") == 0)
+        {
+            Automata *left = automataList->back();
+            automata = left;
+            automata->start->isAcceptable = false;
+
+            for (int i = 0; i < automata->finalStates.size(); i++)
+            {
+                automata->finalStates[i]->isAcceptable = true;
+                AutomataTransition *toE = new AutomataTransition;
+                toE->from = automata->start;
+                toE->to = automata->finalStates[i];
+                toE->input = L"ε";
+                automata->transitions.push_back(toE);
+            }
+
+            addEpsilon(alphabet);
+            automata->alphabet = alphabet;
+        }
     }
 
     return automata;
