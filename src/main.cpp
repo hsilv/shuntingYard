@@ -5,6 +5,7 @@
 #include "automata.h"
 #include "tree.h"
 #include "thompson.h"
+#include "graphviz.h"
 
 Stack<shuntingToken> postfix;
 
@@ -15,15 +16,18 @@ int main(int argc, char *argv[])
     wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
     wstring wide = converter.from_bytes(argv[1]);
     const wchar_t *wide_cstr = wide.c_str();
-    wcout << wide_cstr << endl;
     auto start = chrono::high_resolution_clock::now();
 
     try
     {
         postfix = shuntingYard(wide_cstr);
         TreeNode *tree = constructSyntaxTree(&postfix);
-        /* print2D(tree); */
-        thompson(tree, getAlphabet(&postfix));
+        wstring alphabet = getAlphabet(&postfix);
+        wcout << "\n----------------------------------------\033[1;37m Por algoritmo McNaughton-Yamada-Thompson \033[0m----------------------------------------" << endl;
+        Automata *mcythompson = thompson(tree, alphabet);
+        printAutomata(mcythompson);
+        generateGraph(mcythompson, L"mcythompson");
+        wcout << "\n----------------------------------------\033[1;37m Por Construcción de Subconjuntos \033[0m----------------------------------------" << endl;
     }
     catch (const exception &e)
     {
@@ -34,9 +38,9 @@ int main(int argc, char *argv[])
     // Fin de la ejecución e impresión de tiempo transcurrido
     auto end = chrono::high_resolution_clock::now();
     auto elapsed = chrono::duration_cast<chrono::milliseconds>(end - start);
-    std::wstringstream wss;
+    wstringstream wss;
     wss << elapsed.count();
-    std::wstring elapsed_wstr = wss.str();
-    std::wcout << L"Elapsed time: " << elapsed_wstr << L" ms\n";
+    wstring elapsed_wstr = wss.str();
+    wcout << L"\n\033[1;32mElapsed time: " << elapsed_wstr << L" ms\n\033[0m\n";
     return 0;
 }

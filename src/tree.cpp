@@ -43,16 +43,11 @@ TreeNode *constructSyntaxTree(Stack<shuntingToken> *postfix)
             if (token.type == shuntingToken::UNARY_OPERATOR)
             {
                 node->left = treeStack.pop();
-                wcout << "Root: " << node->value->token << " ";
-                wcout << "Left: " << node->left->value->token << " " << endl;
             }
             else
             {
                 node->right = treeStack.pop();
                 node->left = treeStack.pop();
-                wcout << "Root: " << node->value->token << " ";
-                wcout << "Left: " << node->left->value->token << " ";
-                wcout << "Right: " << node->right->value->token << endl;
             }
             treeStack.push(node);
         }

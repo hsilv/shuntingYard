@@ -8,7 +8,15 @@ wstring getHashName()
     return L"q" + to_wstring(counter++);
 }
 
-Automata *buildThompsonSnippet(TreeNode *node, const wstring &alphabet, vector<Automata *> *automataList)
+void addEpsilon(wstring &alphabet)
+{
+    if (!wcschr(alphabet.c_str(), L'ε'))
+    {
+        alphabet += L'ε';
+    }
+}
+
+Automata *buildThompsonSnippet(TreeNode *node, wstring &alphabet, vector<Automata *> *automataList)
 {
     Automata *automata = new Automata;
 
@@ -48,7 +56,6 @@ Automata *buildThompsonSnippet(TreeNode *node, const wstring &alphabet, vector<A
     {
         if (wcscmp(node->value->token, L".") == 0)
         {
-            wcout << "Concatenation" << endl;
             Automata *right = automataList->back();
             automataList->pop_back();
             Automata *left = automataList->back();
@@ -70,6 +77,28 @@ Automata *buildThompsonSnippet(TreeNode *node, const wstring &alphabet, vector<A
             left->states.insert(left->states.end(), right->states.begin(), right->states.end());
             left->transitions.insert(left->transitions.end(), right->transitions.begin(), right->transitions.end());
 
+            // Remove unused states
+            for (auto it = left->states.begin(); it != left->states.end();)
+            {
+                bool isUsed = false;
+                for (auto transition : left->transitions)
+                {
+                    if (transition->to == *it || transition->from == *it)
+                    {
+                        isUsed = true;
+                        break;
+                    }
+                }
+                if (!isUsed && find(left->finalStates.begin(), left->finalStates.end(), *it) == left->finalStates.end())
+                {
+                    it = left->states.erase(it);
+                }
+                else
+                {
+                    ++it;
+                }
+            }
+
             automata->finalStates = left->finalStates;
             automata->start = left->start;
             automata->states = left->states;
@@ -77,7 +106,6 @@ Automata *buildThompsonSnippet(TreeNode *node, const wstring &alphabet, vector<A
         }
         else if (wcscmp(node->value->token, L"|") == 0)
         {
-            wcout << "Union" << endl;
             Automata *right = automataList->back();
             automataList->pop_back();
             Automata *left = automataList->back();
@@ -93,8 +121,6 @@ Automata *buildThompsonSnippet(TreeNode *node, const wstring &alphabet, vector<A
 
             AutomataTransition *toSRight = new AutomataTransition;
             AutomataTransition *toSLeft = new AutomataTransition;
-            AutomataTransition *toERight = new AutomataTransition;
-            AutomataTransition *toELeft = new AutomataTransition;
 
             toSRight->from = start;
             toSRight->to = right->start;
@@ -106,23 +132,23 @@ Automata *buildThompsonSnippet(TreeNode *node, const wstring &alphabet, vector<A
 
             for (int i = 0; i < right->finalStates.size(); i++)
             {
+                AutomataTransition *toERight = new AutomataTransition;
                 right->finalStates[i]->isAcceptable = false;
                 toERight->from = right->finalStates[i];
                 toERight->to = end;
                 toERight->input = L"ε";
+                left->transitions.push_back(toERight);
             }
 
             for (int i = 0; i < left->finalStates.size(); i++)
             {
+                AutomataTransition *toELeft = new AutomataTransition;
                 left->finalStates[i]->isAcceptable = false;
                 toELeft->from = left->finalStates[i];
                 toELeft->to = end;
                 toELeft->input = L"ε";
+                left->transitions.push_back(toELeft);
             }
-
-            automata->states.push_back(start);
-            automata->states.push_back(end);
-            automata->finalStates.push_back(end);
 
             left->states.insert(left->states.end(), right->states.begin(), right->states.end());
             left->transitions.insert(left->transitions.end(), right->transitions.begin(), right->transitions.end());
@@ -132,14 +158,16 @@ Automata *buildThompsonSnippet(TreeNode *node, const wstring &alphabet, vector<A
             automata->transitions = left->transitions;
             automata->transitions.push_back(toSRight);
             automata->transitions.push_back(toSLeft);
-            automata->transitions.push_back(toERight);
-            automata->transitions.push_back(toELeft);
+            addEpsilon(alphabet);
+            automata->alphabet = alphabet;
+            automata->states.push_back(start);
+            automata->states.push_back(end);
+            automata->finalStates.push_back(end);
         }
         else if (wcscmp(node->value->token, L"*") == 0 || wcscmp(node->value->token, L"+") == 0)
         {
 
             Automata *left = automataList->back();
-            wcout << left->start->name << endl;
             automataList->pop_back();
             automata->states.insert(automata->states.end(), left->states.begin(), left->states.end());
             automata->transitions.insert(automata->transitions.end(), left->transitions.begin(), left->transitions.end());
@@ -183,6 +211,10 @@ Automata *buildThompsonSnippet(TreeNode *node, const wstring &alphabet, vector<A
                 automata->transitions.push_back(StoE);
             }
 
+            addEpsilon(alphabet);
+            automata->alphabet = alphabet;
+            automata->states.push_back(start);
+            automata->states.push_back(end);
             automata->finalStates.push_back(end);
         }
     }
@@ -190,7 +222,7 @@ Automata *buildThompsonSnippet(TreeNode *node, const wstring &alphabet, vector<A
     return automata;
 }
 
-Automata *thompson(TreeNode *node, const wstring &alphabet)
+Automata *thompson(TreeNode *node, wstring &alphabet)
 {
     if (node == nullptr)
     {
@@ -213,16 +245,6 @@ Automata *thompson(TreeNode *node, const wstring &alphabet)
     }
 
     Automata *current = buildThompsonSnippet(node, alphabet, automataList);
-
-    if (current != nullptr)
-    {
-        wcout << L"Automata: " << current->start->name << endl;
-    }
-
-    for (int i = 0; i < current->transitions.size(); i++)
-    {
-        wcout << L"Transition: " << current->transitions[i]->from->name << L" -> " << current->transitions[i]->to->name << L" with " << current->transitions[i]->input << endl;
-    }
 
     return current;
 }

@@ -35,5 +35,6 @@ struct Automata
 };
 
 wstring getAlphabet(Stack<shuntingToken> *postfix);
+void printAutomata(Automata *automata);
 
 #endif

@@ -5,7 +5,7 @@
 #include "automata.h"
 #include "tree.h"
 
-Automata *buildThompsonSnippet(TreeNode *node, const wstring &alphabet, vector<Automata *> *automataList);
-Automata *thompson(TreeNode *node, const wstring &alphabet);
+Automata *buildThompsonSnippet(TreeNode *node, wstring &alphabet, vector<Automata *> *automataList);
+Automata *thompson(TreeNode *node, wstring &alphabet);
 
 #endif

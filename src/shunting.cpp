@@ -132,7 +132,7 @@ Stack<shuntingToken> shuntingYard(const wchar_t *infix)
     Stack<shuntingToken> tokens;
     const wchar_t *cleanedInfix = (wchar_t *)clean((wchar_t *&)infix);
     tokens = getTokens(cleanedInfix);
-    wcout << "\033[1;34m"
+    wcout << "\n\033[1;34m"
           << "Shunting Yard Input"
           << ": \033[0m" << cleanedInfix << endl;
 
