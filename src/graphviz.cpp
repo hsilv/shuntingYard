@@ -17,7 +17,14 @@ void generateGraph(Automata *automata, wstring filename)
     dotScript += "rankdir=LR;\n";
     dotScript += "size=\"20,20\"\n";
     dotScript += "node [shape = plaintext]; qi [label=\"\"];\n";
-    dotScript += "node [shape = circle];\n";
+    if (automata->start->isAcceptable)
+    {
+        dotScript += "node [shape = doublecircle];\n";
+    }
+    else
+    {
+        dotScript += "node [shape = circle];\n";
+    }
     wstring startStateNameW(automata->start->name);
     string startStateName = converter.to_bytes(startStateNameW);
     dotScript += "qi -> " + startStateName + ";\n";

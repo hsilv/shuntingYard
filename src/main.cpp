@@ -6,6 +6,7 @@
 #include "tree.h"
 #include "thompson.h"
 #include "graphviz.h"
+#include "subsets.h"
 
 Stack<shuntingToken> postfix;
 
@@ -27,7 +28,10 @@ int main(int argc, char *argv[])
         Automata *mcythompson = thompson(tree, alphabet);
         printAutomata(mcythompson);
         generateGraph(mcythompson, L"mcythompson");
-        wcout << "\n----------------------------------------\033[1;37m Por Construcción de Subconjuntos \033[0m----------------------------------------" << endl;
+        wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos \033[0m----------------------------------------" << endl;
+        Automata *subset = subsetConstruction(mcythompson);
+        printAutomata(subset);
+        generateGraph(subset, L"bysubsets");
     }
     catch (const exception &e)
     {

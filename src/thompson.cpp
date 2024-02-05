@@ -34,11 +34,12 @@ Automata *buildThompsonSnippet(TreeNode *node, wstring &alphabet, vector<Automat
     if (node->value->type == shuntingToken::OPERAND)
     {
         AutomataState *start = new AutomataState;
+        vector<AutomataTransition *> *startTransitions = new vector<AutomataTransition *>;
         start->isAcceptable = false;
-        automata->start = start;
         start->name = wcsdup(getHashName().c_str());
 
         AutomataState *end = new AutomataState;
+        vector<AutomataTransition *> *endTransitions = new vector<AutomataTransition *>;
         end->isAcceptable = true;
         end->name = wcsdup(getHashName().c_str());
 
@@ -47,6 +48,11 @@ Automata *buildThompsonSnippet(TreeNode *node, wstring &alphabet, vector<Automat
         transition->to = end;
         transition->input = node->value->token;
 
+        startTransitions->push_back(transition);
+        start->transitions = *startTransitions;
+        end->transitions = *endTransitions;
+
+        automata->start = start;
         automata->states.push_back(start);
         automata->states.push_back(end);
         automata->transitions.push_back(transition);
@@ -64,38 +70,37 @@ Automata *buildThompsonSnippet(TreeNode *node, wstring &alphabet, vector<Automat
             for (int i = 0; i < left->finalStates.size(); i++)
             {
                 left->finalStates[i]->isAcceptable = false;
-                for (int j = 0; j < left->transitions.size(); j++)
-                {
-                    if (left->transitions[j]->to == left->finalStates[i])
-                    {
-                        left->transitions[j]->to = right->start;
-                    }
-                }
+                AutomataTransition *transition = new AutomataTransition;
+                transition->from = left->finalStates[i];
+                transition->to = right->start;
+                transition->input = L"ε";
+                left->finalStates[i]->transitions.push_back(transition);
+                left->transitions.push_back(transition);
             }
 
             left->finalStates = right->finalStates;
             left->states.insert(left->states.end(), right->states.begin(), right->states.end());
             left->transitions.insert(left->transitions.end(), right->transitions.begin(), right->transitions.end());
 
-            // Remove unused states
-            for (auto it = left->states.begin(); it != left->states.end();)
+            for (int i = 0; i < left->states.size(); i++)
             {
-                bool isUsed = false;
-                for (auto transition : left->transitions)
+                for (int j = 0; j < left->states[i]->transitions.size(); j++)
                 {
-                    if (transition->to == *it || transition->from == *it)
+                    if (left->states[i]->transitions[j]->to == left->states[i])
                     {
-                        isUsed = true;
-                        break;
+                        left->states[i]->transitions[j]->to = right->start;
                     }
                 }
-                if (!isUsed && find(left->finalStates.begin(), left->finalStates.end(), *it) == left->finalStates.end())
+            }
+
+            for (int i = 0; i < left->finalStates.size(); i++)
+            {
+                for (int j = 0; j < left->finalStates[i]->transitions.size(); j++)
                 {
-                    it = left->states.erase(it);
-                }
-                else
-                {
-                    ++it;
+                    if (left->finalStates[i]->transitions[j]->to == left->finalStates[i])
+                    {
+                        left->finalStates[i]->transitions[j]->to = right->start;
+                    }
                 }
             }
 
@@ -125,10 +130,12 @@ Automata *buildThompsonSnippet(TreeNode *node, wstring &alphabet, vector<Automat
             toSRight->from = start;
             toSRight->to = right->start;
             toSRight->input = L"ε";
+            start->transitions.push_back(toSRight);
 
             toSLeft->from = start;
             toSLeft->to = left->start;
             toSLeft->input = L"ε";
+            start->transitions.push_back(toSLeft);
 
             for (int i = 0; i < right->finalStates.size(); i++)
             {
@@ -137,6 +144,7 @@ Automata *buildThompsonSnippet(TreeNode *node, wstring &alphabet, vector<Automat
                 toERight->from = right->finalStates[i];
                 toERight->to = end;
                 toERight->input = L"ε";
+                right->finalStates[i]->transitions.push_back(toERight);
                 left->transitions.push_back(toERight);
             }
 
@@ -147,6 +155,7 @@ Automata *buildThompsonSnippet(TreeNode *node, wstring &alphabet, vector<Automat
                 toELeft->from = left->finalStates[i];
                 toELeft->to = end;
                 toELeft->input = L"ε";
+                left->finalStates[i]->transitions.push_back(toELeft);
                 left->transitions.push_back(toELeft);
             }
 
@@ -185,6 +194,7 @@ Automata *buildThompsonSnippet(TreeNode *node, wstring &alphabet, vector<Automat
             toS->from = start;
             toS->to = left->start;
             toS->input = L"ε";
+            start->transitions.push_back(toS);
             automata->transitions.push_back(toS);
 
             for (int i = 0; i < left->finalStates.size(); i++)
@@ -195,10 +205,12 @@ Automata *buildThompsonSnippet(TreeNode *node, wstring &alphabet, vector<Automat
                 EtoS->from = left->finalStates[i];
                 EtoS->to = left->start;
                 EtoS->input = L"ε";
+                left->finalStates[i]->transitions.push_back(EtoS);
                 automata->transitions.push_back(EtoS);
                 toE->from = left->finalStates[i];
                 toE->to = end;
                 toE->input = L"ε";
+                left->finalStates[i]->transitions.push_back(toE);
                 automata->transitions.push_back(toE);
             }
 
@@ -208,6 +220,7 @@ Automata *buildThompsonSnippet(TreeNode *node, wstring &alphabet, vector<Automat
                 StoE->from = start;
                 StoE->to = end;
                 StoE->input = L"ε";
+                start->transitions.push_back(StoE);
                 automata->transitions.push_back(StoE);
             }
 
@@ -230,6 +243,7 @@ Automata *buildThompsonSnippet(TreeNode *node, wstring &alphabet, vector<Automat
                 toE->from = automata->start;
                 toE->to = automata->finalStates[i];
                 toE->input = L"ε";
+                automata->start->transitions.push_back(toE);
                 automata->transitions.push_back(toE);
             }
 
