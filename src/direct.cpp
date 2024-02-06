@@ -51,28 +51,46 @@ Automata *buildDirectSnippet(TreeNode *node, wstring &alphabet, vector<Automata 
             automataList->pop_back();
             Automata *left = automataList->back();
             automataList->pop_back();
+            left->start->isAcceptable = false;
 
-            for (AutomataTransition *transition : left->transitions)
+            for (AutomataState *finalState : left->states)
             {
-                if (std::find(left->finalStates.begin(), left->finalStates.end(), transition->to) != left->finalStates.end())
+                if (finalState->isAcceptable)
                 {
-                    transition->to = right->start;
+                    finalState->isAcceptable = false;
+
+                    for (AutomataTransition *startTransition : right->start->transitions)
+                    {
+                        AutomataTransition *newConcat = new AutomataTransition;
+                        newConcat->from = finalState;
+                        newConcat->to = startTransition->to;
+                        newConcat->input = startTransition->input;
+                        finalState->transitions.push_back(newConcat);
+                        left->transitions.push_back(newConcat);
+                    }
                 }
             }
 
-            for (AutomataState *finalState : left->finalStates)
+            for (AutomataState *state : left->states)
             {
-                finalState->isAcceptable = false;
-
-                left->states.erase(std::remove(left->states.begin(), left->states.end(), finalState), left->states.end());
+                state->isAcceptable = false;
             }
 
-            left->finalStates.clear();
+            for (AutomataState *state : right->states)
+            {
+                if (state != right->start)
+                {
+                    left->states.push_back(state);
+                }
+            }
 
-            left->states.insert(left->states.end(), right->states.begin(), right->states.end());
-
-            left->transitions.insert(left->transitions.end(), right->transitions.begin(), right->transitions.end());
-            left->finalStates = right->finalStates;
+            for (AutomataTransition *transition : right->transitions)
+            {
+                if (transition->to != right->start && transition->from != right->start)
+                {
+                    left->transitions.push_back(transition);
+                }
+            }
 
             automata = left;
         }
@@ -150,12 +168,39 @@ Automata *buildDirectSnippet(TreeNode *node, wstring &alphabet, vector<Automata 
             automata->transitions.insert(automata->transitions.end(), left->transitions.begin(), left->transitions.end());
             automata->transitions.insert(automata->transitions.end(), right->transitions.begin(), right->transitions.end());
         }
-        else if (wcscmp(node->value->token, L"*") == 0)
+        else if (wcscmp(node->value->token, L"*") == 0 || wcscmp(node->value->token, L"+") == 0)
         {
             Automata *left = automataList->back();
             automataList->pop_back();
 
-            AutomataTransition *transition = new AutomataTransition;
+            if (wcscmp(node->value->token, L"*") == 0)
+            {
+                left->start->isAcceptable = true;
+            }
+
+            for (int i = 0; i < left->transitions.size(); i++)
+            {
+                // Find all the states that start points to and add a transition from the final states to them
+                if (left->transitions[i]->from == left->start)
+                {
+                    for (int j = 0; j < left->finalStates.size(); j++)
+                    {
+                        AutomataTransition *newTransition = new AutomataTransition;
+                        newTransition->from = left->finalStates[j];
+                        newTransition->to = left->transitions[i]->to;
+                        newTransition->input = left->transitions[i]->input;
+                        left->transitions.push_back(newTransition);
+                    }
+                }
+            }
+            automata = left;
+        }
+        else if (wcscmp(node->value->token, L"?") == 0)
+        {
+            Automata *left = automataList->back();
+            automataList->pop_back();
+            automata = left;
+            automata->start->isAcceptable = true;
         }
     }
     return automata;
