@@ -34,10 +34,15 @@ int main(int argc, char *argv[])
         printAutomata(subset);
         generateGraph(subset, L"bysubsets");
         wcout << "\n----------------------------------------\033[1;37m Por Construccion directa \033[0m----------------------------------------" << endl;
-        directConstruction(tree, alphabet);
-        /* Automata *direct = directConstruction(tree, alphabet);
+        size_t pos = alphabet.find(L'ε');
+        if (pos != std::wstring::npos)
+        {
+            alphabet.erase(pos, 1);
+        }
+        /* directConstruction(tree, alphabet); */
+        Automata *direct = directConstruction(tree, alphabet);
         printAutomata(direct);
-        generateGraph(direct, L"bydirect"); */
+        generateGraph(direct, L"bydirect");
     }
     catch (const exception &e)
     {
