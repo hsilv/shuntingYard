@@ -69,6 +69,11 @@ void print2DUtil(TreeNode *root, int space)
     wcout << endl;
     for (int i = COUNT; i < space; i++)
         wcout << L" ";
+
+    if (wcscmp(root->value->token, L"") != 0)
+    {
+        wcout << L"\033[1;31m" << root->tag << L" \033[0m";
+    }
     wcout << root->value->token << L"\n";
 
     print2DUtil(root->left, space);

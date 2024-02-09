@@ -34,9 +34,10 @@ int main(int argc, char *argv[])
         printAutomata(subset);
         generateGraph(subset, L"bysubsets");
         wcout << "\n----------------------------------------\033[1;37m Por Construccion directa \033[0m----------------------------------------" << endl;
-        Automata *direct = directConstruction(tree, alphabet);
+        directConstruction(tree, alphabet);
+        /* Automata *direct = directConstruction(tree, alphabet);
         printAutomata(direct);
-        generateGraph(direct, L"bydirect");
+        generateGraph(direct, L"bydirect"); */
     }
     catch (const exception &e)
     {
