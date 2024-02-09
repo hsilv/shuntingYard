@@ -10,5 +10,6 @@ Automata *directConstruction(TreeNode *node, wstring &alphabet); */
 Automata *directConstruction(TreeNode *node, wstring &alphabet);
 TreeNode *tagLeaves(TreeNode *node);
 bool anullableFunction(TreeNode *node);
+set<wstring> *firstPosFunction(TreeNode *node);
 
 #endif

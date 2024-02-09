@@ -20,7 +20,6 @@ bool anullableFunction(TreeNode *node)
             anullableFunction(node->left);
         }
     }
-
     else if (wcscmp(node->value->token, L"|") == 0 && node->right != nullptr && node->left != nullptr)
     {
         const bool leftAnullable = anullableFunction(node->left);
@@ -65,8 +64,61 @@ bool anullableFunction(TreeNode *node)
             anullableFunction(node->left);
         }
     }
+    else
+    {
+        node->anulable = false;
+    }
 
     return node->anulable;
+}
+
+set<wstring> *firstPosFunction(TreeNode *node)
+{
+    set<wstring> *firstPos = new set<wstring>;
+    if (wcscmp(node->value->token, L"|") == 0 && node->right != nullptr && node->left != nullptr)
+    {
+        set<wstring> *leftFirstPos = firstPosFunction(node->left);
+        set<wstring> *rightFirstPos = firstPosFunction(node->right);
+        firstPos->insert(leftFirstPos->begin(), leftFirstPos->end());
+        firstPos->insert(rightFirstPos->begin(), rightFirstPos->end());
+        return firstPos;
+    }
+    else if (wcscmp(node->value->token, L".") == 0 && node->right != nullptr && node->left != nullptr)
+    {
+        if (anullableFunction(node->left))
+        {
+            set<wstring> *leftFirstPos = firstPosFunction(node->left);
+            set<wstring> *rightFirstPos = firstPosFunction(node->right);
+            firstPos->insert(leftFirstPos->begin(), leftFirstPos->end());
+            firstPos->insert(rightFirstPos->begin(), rightFirstPos->end());
+            return firstPos;
+        }
+        else
+        {
+            set<wstring> *leftFirstPos = firstPosFunction(node->left);
+            return leftFirstPos;
+        }
+    }
+    else if (wcscmp(node->value->token, L"*") == 0)
+    {
+        set<wstring> *leftFirstPos = firstPosFunction(node->left);
+        return leftFirstPos;
+    }
+    else if (wcscmp(node->value->token, L"+") == 0 && node->left != nullptr)
+    {
+        set<wstring> *leftFirstPos = firstPosFunction(node->left);
+        return leftFirstPos;
+    }
+    else if (wcscmp(node->value->token, L"?") == 0)
+    {
+        set<wstring> *leftFirstPos = firstPosFunction(node->left);
+        return leftFirstPos;
+    }
+    else
+    {
+        firstPos->insert(node->tag);
+    }
+    return firstPos;
 }
 
 TreeNode *tagLeaves(TreeNode *node)
@@ -95,6 +147,7 @@ Automata *directConstruction(TreeNode *node, wstring &alphabet)
 
     node = tagLeaves(node);
     anullableFunction(node);
+    set<wstring> *firstPos = firstPosFunction(node);
 
     print2DUtil(node, 0);
 

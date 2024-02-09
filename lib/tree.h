@@ -15,9 +15,9 @@ struct TreeNode
     TreeNode *right;
     wstring tag = L"";
     bool anulable;
-    set<wstring> firstPos;
-    set<wstring> lastPos;
-    set<wstring> nextPos;
+    set<wstring> *firstPos;
+    set<wstring> *lastPos;
+    set<wstring> *nextPos;
 };
 
 TreeNode *createNode(shuntingToken *value);
