@@ -178,6 +178,69 @@ set<wstring> *lastPosFunction(TreeNode *node)
     }
 }
 
+void addNextPos(TreeNode *node, set<wstring> *leftLastPos, set<wstring> *rightFirstPos)
+{
+    if (node == nullptr)
+    {
+        return;
+    }
+
+    if (leftLastPos->find(node->tag) != leftLastPos->end())
+    {
+        set<wstring> *nextPos = new set<wstring>;
+        if (node->nextPos == nullptr)
+        {
+            node->nextPos = nextPos;
+        }
+        node->nextPos->insert(rightFirstPos->begin(), rightFirstPos->end());
+    }
+
+    addNextPos(node->left, leftLastPos, rightFirstPos);
+    addNextPos(node->right, leftLastPos, rightFirstPos);
+}
+
+set<wstring> *nextPosFunction(TreeNode *node)
+{
+    if (node == nullptr)
+    {
+        return nullptr;
+    }
+    set<wstring> *nextPos = new set<wstring>;
+    bool isLeft = (node->left != nullptr);
+    bool isRight = (node->right != nullptr);
+    node->nextPos = nextPos;
+
+    if (isLeft)
+    {
+        nextPosFunction(node->left);
+    }
+    if (isRight)
+    {
+        nextPosFunction(node->right);
+    }
+
+    if (wcscmp(node->value->token, L".") == 0 && isLeft && isRight)
+    {
+        set<wstring> *leftLastPos = node->left->lastPos;
+        set<wstring> *rightFirstPos = node->right->firstPos;
+        addNextPos(node, leftLastPos, rightFirstPos);
+    }
+    else if (wcscmp(node->value->token, L"*") == 0 && isLeft)
+    {
+        set<wstring> *leftLastPos = node->left->lastPos;
+        set<wstring> *leftFirstPos = node->left->firstPos;
+
+        wcout << leftFirstPos->size() << endl;
+        wcout << leftLastPos->size() << endl;
+
+        addNextPos(node, leftLastPos, leftFirstPos);
+    }
+    else
+    {
+        return nextPos;
+    }
+}
+
 TreeNode *tagLeaves(TreeNode *node)
 {
     if (node == nullptr)
@@ -244,6 +307,29 @@ void printlPos(TreeNode *node)
     printlPos(node->right);
 }
 
+void printnPos(TreeNode *node)
+{
+    if (node == nullptr)
+    {
+        return;
+    }
+
+    // Imprimir la información del nodo
+    wcout << L"Node value: " << node->value->token << L" ";
+    wcout << L"Node tag: " << node->tag << L" ";
+    wcout << L"Node nextPos: ";
+    for (const auto &tag : *(node->nextPos))
+    {
+        wcout << tag << L" ";
+    }
+    wcout << endl;
+    wcout << endl;
+
+    // Recorrer los hijos del nodo
+    printnPos(node->left);
+    printnPos(node->right);
+}
+
 Automata *directConstruction(TreeNode *node, wstring &alphabet)
 {
     Automata *automata = new Automata;
@@ -255,6 +341,9 @@ Automata *directConstruction(TreeNode *node, wstring &alphabet)
 
     /* printPos(node); */
     /* printlPos(node); */
+    nextPosFunction(node);
+
+    printnPos(node);
     print2DUtil(node, 0);
 
     return automata;

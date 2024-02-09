@@ -12,5 +12,6 @@ TreeNode *tagLeaves(TreeNode *node);
 bool anullableFunction(TreeNode *node);
 set<wstring> *firstPosFunction(TreeNode *node);
 set<wstring> *lastPosFunction(TreeNode *node);
+set<wstring> *nextPosFunction(TreeNode *node);
 
 #endif
