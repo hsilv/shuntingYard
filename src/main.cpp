@@ -10,6 +10,7 @@
 #include "direct.h"
 
 Stack<shuntingToken> postfix;
+Stack<shuntingToken> postfixAugmented;
 
 int main(int argc, char *argv[])
 {
@@ -23,7 +24,9 @@ int main(int argc, char *argv[])
     try
     {
         postfix = shuntingYard(wide_cstr);
+        postfixAugmented = shuntingYard((wstring(wide_cstr) + L"#").c_str());
         TreeNode *tree = constructSyntaxTree(&postfix);
+        TreeNode *treeAugmented = constructSyntaxTree(&postfixAugmented);
         wstring alphabet = getAlphabet(&postfix);
         wcout << "\n----------------------------------------\033[1;37m Por algoritmo McNaughton-Yamada-Thompson \033[0m----------------------------------------" << endl;
         Automata *mcythompson = thompson(tree, alphabet);
@@ -39,8 +42,7 @@ int main(int argc, char *argv[])
         {
             alphabet.erase(pos, 1);
         }
-        /* directConstruction(tree, alphabet); */
-        Automata *direct = directConstruction(tree, alphabet);
+        Automata *direct = directConstruction(treeAugmented, alphabet);
         printAutomata(direct);
         generateGraph(direct, L"bydirect");
     }
