@@ -92,3 +92,46 @@ void completeAFD(Automata *automata)
         automata->states.push_back(deadState);
     }
 }
+
+Automata *deepCopyAutomata(const Automata *original)
+{
+    Automata *newAutomata = new Automata();
+    map<AutomataState *, AutomataState *> stateMap;
+
+    // Copy states
+    for (AutomataState *state : original->states)
+    {
+        AutomataState *newState = new AutomataState();
+        newState->name = new wchar_t[wcslen(state->name) + 1];
+        wcscpy(newState->name, state->name);
+        newState->isAcceptable = state->isAcceptable;
+        newAutomata->states.push_back(newState);
+        stateMap[state] = newState; // Save old to new state mapping
+    }
+
+    // Copy transitions
+    for (AutomataTransition *transition : original->transitions)
+    {
+        AutomataTransition *newTransition = new AutomataTransition();
+        newTransition->from = stateMap[transition->from];
+        newTransition->to = stateMap[transition->to];
+        newTransition->input = new wchar_t[wcslen(transition->input) + 1];
+        wcscpy(newTransition->input, transition->input);
+        newTransition->from->transitions.push_back(newTransition);
+        newAutomata->transitions.push_back(newTransition);
+    }
+
+    // Copy start state
+    newAutomata->start = stateMap[original->start];
+
+    // Copy final states
+    for (AutomataState *state : original->finalStates)
+    {
+        newAutomata->finalStates.push_back(stateMap[state]);
+    }
+
+    // Copy alphabet
+    newAutomata->alphabet = original->alphabet;
+
+    return newAutomata;
+}

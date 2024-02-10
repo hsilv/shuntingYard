@@ -41,16 +41,6 @@ Automata *minifyAutomata(Automata *automata)
     partitions.push_back(SI);
     partitions.push_back(SF);
 
-    for (auto partition : partitions)
-    {
-        wcout << L"Partition: " << partition->name << L" ";
-        for (const auto &item : *partition->states)
-        {
-            wcout << item->name << L" ";
-        }
-        wcout << endl;
-    }
-
     bool partitionAdded;
     do
     {
@@ -71,11 +61,8 @@ Automata *minifyAutomata(Automata *automata)
                 break;
             }
         }
-
-        wcout << L"Lo obtuve " << (base == nullptr) << endl;
         vector<AutomataState *> toErase;
 
-        // Start of modified code
         for (const auto &symbol : alphabet)
         {
             map<wstring, set<AutomataState *>> transitions;
@@ -110,20 +97,7 @@ Automata *minifyAutomata(Automata *automata)
                 }
             }
         }
-        // End of modified code
     } while (partitionAdded);
-
-    wcout << endl;
-
-    for (auto partition : partitions)
-    {
-        wcout << L"Partition: " << partition->name << L" ";
-        for (const auto &item : *partition->states)
-        {
-            wcout << item->name << L" ";
-        }
-        wcout << endl;
-    }
 
     for (auto partition : partitions)
     {
@@ -201,17 +175,6 @@ Automata *minifyAutomata(Automata *automata)
                     }
                 }
             }
-        }
-    }
-
-    for (auto state : *states)
-    {
-        wcout << state->name << endl;
-        wcout << state->isAcceptable << endl;
-
-        for (auto transition : state->transitions)
-        {
-            wcout << L"  " << transition->input << L" -> " << transition->to->name << endl;
         }
     }
 

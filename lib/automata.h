@@ -37,5 +37,6 @@ struct Automata
 wstring getAlphabet(Stack<shuntingToken> *postfix);
 void printAutomata(Automata *automata);
 void completeAFD(Automata *automata);
+Automata *deepCopyAutomata(const Automata *original);
 
 #endif

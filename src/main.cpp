@@ -57,7 +57,8 @@ int main(int argc, char *argv[])
         printAutomata(direct);
         generateGraph(direct, L"bydirect");
         wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos (Minificado) \033[0m----------------------------------------" << endl;
-        Automata *minifiedSubset = minifyAutomata(subset);
+        Automata *subsetCopy = deepCopyAutomata(subset);
+        Automata *minifiedSubset = minifyAutomata(subsetCopy);
         printAutomata(minifiedSubset);
         generateGraph(minifiedSubset, L"bysubsetsminified");
         wcout << "\n----------------------------------------\033[1;37m Por Construccion directa (Minificado) \033[0m----------------------------------------" << endl;
