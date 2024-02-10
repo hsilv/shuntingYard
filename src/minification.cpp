@@ -41,64 +41,89 @@ Automata *minifyAutomata(Automata *automata)
     partitions.push_back(SI);
     partitions.push_back(SF);
 
+    for (auto partition : partitions)
+    {
+        wcout << L"Partition: " << partition->name << L" ";
+        for (const auto &item : *partition->states)
+        {
+            wcout << item->name << L" ";
+        }
+        wcout << endl;
+    }
+
     bool partitionAdded;
     do
     {
         partitionAdded = false;
-        Partition *base = partitions[0];
+        Partition *base = nullptr;
+        for (auto &partition : partitions)
+        {
+            for (auto &state : *partition->states)
+            {
+                if (wstring(state->name) == wstring(automata->start->name))
+                {
+                    base = partition;
+                    break;
+                }
+            }
+            if (base != nullptr)
+            {
+                break;
+            }
+        }
+
+        wcout << L"Lo obtuve " << (base == nullptr) << endl;
         vector<AutomataState *> toErase;
+
+        // Start of modified code
         for (const auto &symbol : alphabet)
         {
-            set<AutomataState *> *toBeAdded = new set<AutomataState *>();
+            map<wstring, set<AutomataState *>> transitions;
             for (const auto &state : *base->states)
             {
-
-                for (const auto &transition : automata->transitions)
+                for (const auto &transition : state->transitions)
                 {
-                    if (transition->from == state && transition->input == wstring(1, symbol))
+                    if (wstring(transition->input) == wstring(1, symbol))
                     {
-
-                        if (base->states->find(transition->to) != base->states->end())
+                        wstring toStateName = wstring(transition->to->name);
+                        if (transitions.find(toStateName) == transitions.end())
                         {
+                            transitions[toStateName] = set<AutomataState *>();
                         }
-                        else
-                        {
-
-                            toBeAdded->insert(transition->from);
-                        }
+                        transitions[toStateName].insert(state);
                     }
                 }
             }
 
-            bool found = false;
-            for (const auto &partition : partitions)
+            for (const auto &pair : transitions)
             {
-                if (*partition->states == *toBeAdded)
+                if (pair.second.size() < base->states->size())
                 {
-                    found = true;
-                    break;
+                    Partition *newPartition = new Partition();
+                    newPartition->states = new set<AutomataState *>(pair.second);
+                    partitions.push_back(newPartition);
+                    for (const auto &state : pair.second)
+                    {
+                        base->states->erase(state);
+                    }
+                    partitionAdded = true;
                 }
-            }
-
-            if (!found && !toBeAdded->empty())
-            {
-                Partition *newPartition = new Partition();
-                newPartition->states = toBeAdded;
-                partitions.push_back(newPartition);
-                partitionAdded = true;
-                for (const auto &state : *toBeAdded)
-                {
-                    base->states->erase(state);
-                }
-            }
-            else
-            {
-                delete toBeAdded;
             }
         }
+        // End of modified code
     } while (partitionAdded);
 
     wcout << endl;
+
+    for (auto partition : partitions)
+    {
+        wcout << L"Partition: " << partition->name << L" ";
+        for (const auto &item : *partition->states)
+        {
+            wcout << item->name << L" ";
+        }
+        wcout << endl;
+    }
 
     for (auto partition : partitions)
     {
@@ -176,6 +201,17 @@ Automata *minifyAutomata(Automata *automata)
                     }
                 }
             }
+        }
+    }
+
+    for (auto state : *states)
+    {
+        wcout << state->name << endl;
+        wcout << state->isAcceptable << endl;
+
+        for (auto transition : state->transitions)
+        {
+            wcout << L"  " << transition->input << L" -> " << transition->to->name << endl;
         }
     }
 

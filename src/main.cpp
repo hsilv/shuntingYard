@@ -73,6 +73,8 @@ int main(int argc, char *argv[])
         simulateAutomata(minifiedSubset, expresion);
         wcout << L"\n\033[1;37mSimulacion de AFD por construccion directa (minificado)\033[0m" << endl;
         simulateAutomata(minifiedDirect, expresion);
+        wcout << L"\n\033[1;37mSimulacion de AFN por McNaughton-Yamada-Thompson\033[0m" << endl;
+        simulateNFA(mcythompson, expresion);
     }
     catch (const exception &e)
     {

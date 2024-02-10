@@ -76,8 +76,18 @@ void completeAFD(Automata *automata)
         }
     }
 
+    // Add transitions from the dead state to itself for each letter in the alphabet
+
     if (automata->transitions.size() < transitions->size())
     {
+        for (wchar_t symbol : alphabet)
+        {
+            AutomataTransition *newTransition = new AutomataTransition();
+            newTransition->from = deadState;
+            newTransition->input = wcsdup(wstring(1, symbol).c_str());
+            newTransition->to = deadState;
+            transitions->push_back(newTransition);
+        }
         automata->transitions = *transitions;
         automata->states.push_back(deadState);
     }

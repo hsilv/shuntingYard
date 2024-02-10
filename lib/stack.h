@@ -47,7 +47,7 @@ T Stack<T>::pop()
 {
     if (isEmpty())
     {
-        throw std::out_of_range("Stack is empty");
+        throw std::out_of_range("Mismatched operators");
     }
     else
     {
