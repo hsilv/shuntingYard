@@ -127,11 +127,51 @@ Stack<shuntingToken> getTokens(const wchar_t *&infix)
     return tokens;
 }
 
+wstring expandRanges(const wstring &input)
+{
+    wstring output;
+    for (size_t i = 0; i < input.size(); ++i)
+    {
+        if (input[i] == L'[')
+        {
+            size_t end = input.find(L']', i);
+            if (end != wstring::npos && end > i + 2 && input[i + 2] == L'-')
+            {
+                wchar_t startChar = input[i + 1];
+                wchar_t endChar = input[i + 3];
+                output += L"("; // Add opening parenthesis
+                for (wchar_t c = startChar; c <= endChar; ++c)
+                {
+                    output += c;
+                    if (c != endChar)
+                    {
+                        output += L"|";
+                    }
+                }
+                output += L")"; // Add closing parenthesis
+                i = end;
+            }
+            else
+            {
+                output += input[i];
+            }
+        }
+        else
+        {
+            output += input[i];
+        }
+    }
+    return output;
+}
+
 Stack<shuntingToken> shuntingYard(const wchar_t *infix)
 {
     Stack<shuntingToken> tokens;
-    const wchar_t *cleanedInfix = (wchar_t *)clean((wchar_t *&)infix);
+    wstring expandedInfix = expandRanges(infix);
+    const wchar_t *cleanedInfix = (wchar_t *)clean((wchar_t *&)expandedInfix);
     tokens = getTokens(cleanedInfix);
+    /*     const wchar_t *cleanedInfix = (wchar_t *)clean((wchar_t *&)infix);
+        tokens = getTokens(cleanedInfix); */
     wcout << "\n\033[1;34m"
           << "Shunting Yard Input"
           << ": \033[0m" << cleanedInfix << endl;
