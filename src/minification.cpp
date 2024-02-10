@@ -136,11 +136,6 @@ Automata *minifyAutomata(Automata *automata)
         states->push_back(stateReference);
     }
 
-    AutomataState *trapState = new AutomataState();
-    trapState->name = L"trap";
-
-    states->push_back(trapState);
-
     for (auto partition : partitions)
     {
         for (const auto &symbol : automata->alphabet)
@@ -181,35 +176,6 @@ Automata *minifyAutomata(Automata *automata)
                     }
                 }
             }
-            if (!transitionAdded)
-            {
-                AutomataTransition *trapTransition = new AutomataTransition();
-                trapTransition->from = partition->stateReference;
-                trapTransition->to = trapState;
-                trapTransition->input = wcsdup(wstring(1, symbol).c_str());
-
-                transitions->push_back(trapTransition);
-                partition->stateReference->transitions.push_back(trapTransition);
-            }
-        }
-    }
-
-    if (trapState != nullptr)
-    {
-
-        bool isTrapStateUsed = false;
-        for (auto transition : *transitions)
-        {
-            if (transition->from == trapState || transition->to == trapState)
-            {
-                isTrapStateUsed = true;
-                break;
-            }
-        }
-
-        if (!isTrapStateUsed)
-        {
-            states->erase(std::remove(states->begin(), states->end(), trapState), states->end());
         }
     }
 

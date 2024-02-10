@@ -9,16 +9,25 @@
 #include "subsets.h"
 #include "direct.h"
 #include "minification.h"
+#include "simulation.h"
 
 Stack<shuntingToken> postfix;
 Stack<shuntingToken> postfixAugmented;
 
 int main(int argc, char *argv[])
 {
+    if (argc != 3)
+    {
+        cerr << "\033[1;31m"
+             << "ERROR: Debe ingresar una expresión regular y una cadena a validar"
+             << "\033[0m" << endl;
+        return 1;
+    }
     // Inicio de la ejecución e inicio de medidor de reloj
     locale::global(locale("en_US.UTF-8"));
     wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
     wstring wide = converter.from_bytes(argv[1]);
+    wstring expresion = converter.from_bytes(argv[2]);
     const wchar_t *wide_cstr = wide.c_str();
     auto start = chrono::high_resolution_clock::now();
 
@@ -44,6 +53,7 @@ int main(int argc, char *argv[])
             alphabet.erase(pos, 1);
         }
         Automata *direct = directConstruction(treeAugmented, alphabet);
+        completeAFD(direct);
         printAutomata(direct);
         generateGraph(direct, L"bydirect");
         wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos (Minificado) \033[0m----------------------------------------" << endl;
@@ -54,12 +64,23 @@ int main(int argc, char *argv[])
         Automata *minifiedDirect = minifyAutomata(direct);
         printAutomata(minifiedDirect);
         generateGraph(minifiedDirect, L"bydirectminified");
+
+        wcout << L"\n\033[1;37mSimulacion de AFD por subconjuntos\033[0m" << endl;
+        simulateAutomata(subset, expresion);
+        wcout << L"\n\033[1;37mSimulacion de AFD por construccion directa\033[0m" << endl;
+        simulateAutomata(direct, expresion);
+        wcout << L"\n\033[1;37mSimulacion de AFD por subconjuntos (minificado)\033[0m" << endl;
+        simulateAutomata(minifiedSubset, expresion);
+        wcout << L"\n\033[1;37mSimulacion de AFD por construccion directa (minificado)\033[0m" << endl;
+        simulateAutomata(minifiedDirect, expresion);
     }
     catch (const exception &e)
     {
         cerr << "\033[1;31m"
              << "ERROR: " << e.what() << "\033[0m" << endl;
     }
+
+    /* wcout << L"A validar: " << expresion << endl; */
 
     // Fin de la ejecución e impresión de tiempo transcurrido
     auto end = chrono::high_resolution_clock::now();

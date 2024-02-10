@@ -41,3 +41,44 @@ void printAutomata(Automata *automata)
         wcout << "\n\033[1;36mAlphabet: \033[0m" << automata->alphabet << endl;
     }
 }
+
+void completeAFD(Automata *automata)
+{
+    AutomataState *deadState = new AutomataState();
+    deadState->name = L"qDead";
+    deadState->isAcceptable = false;
+
+    vector<AutomataTransition *> *transitions = new vector<AutomataTransition *>();
+    wstring alphabet = automata->alphabet;
+
+    for (auto transition : automata->transitions)
+    {
+        transitions->push_back(transition);
+    }
+
+    for (auto state : automata->states)
+    {
+        for (wchar_t symbol : alphabet)
+        {
+            auto it = std::find_if(transitions->begin(), transitions->end(),
+                                   [state, symbol](const auto &transition)
+                                   { return wcscmp(transition->from->name, state->name) == 0 && wcscmp(transition->input, wstring(1, symbol).c_str()) == 0; });
+
+            if (it == transitions->end())
+            {
+                // No transition found, add a new one to the dead state
+                AutomataTransition *newTransition = new AutomataTransition();
+                newTransition->from = state;
+                newTransition->input = wcsdup(wstring(1, symbol).c_str());
+                newTransition->to = deadState;
+                transitions->push_back(newTransition);
+            }
+        }
+    }
+
+    if (automata->transitions.size() < transitions->size())
+    {
+        automata->transitions = *transitions;
+        automata->states.push_back(deadState);
+    }
+}
