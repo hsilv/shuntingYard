@@ -424,13 +424,8 @@ Automata *directConstruction(TreeNode *node, wstring &alphabet)
     node = tagLeaves(node);
     anullableFunction(node);
     firstPosFunction(node);
-    printfPos(node);
     lastPosFunction(node);
-    printlPos(node);
     nextPosFunction(node);
-    printnPos(node);
-
-    print2DUtil(node, 0);
 
     TreeNode *initialNode = findNodeByTag(node, L"1");
 
@@ -466,26 +461,16 @@ Automata *directConstruction(TreeNode *node, wstring &alphabet)
 
                 set<TreeNode *> nodes;
                 set<wstring> *subsetTags = new set<wstring>;
-                /* wcout << L"Searching for tag:"; */
 
                 for (const auto &item : *transition->positions)
                 {
                     findNodesByTagAndToken(node, item, wstring(1, symbol), nodes);
-                    /* wcout << L" " << item; */
                 }
-                /* wcout << L" and token: " << wstring(1, symbol); */
 
                 for (const auto &item : nodes)
                 {
                     subsetTags->insert(item->nextPos->begin(), item->nextPos->end());
                 }
-
-                /* wcout << L" gives: { ";
-                for (const auto &tag : *subsetTags)
-                {
-                    wcout << tag << L", ";
-                }
-                wcout << L"} " << endl; */
 
                 bool exists = false;
                 TransitionItem *repeated = nullptr;
@@ -517,7 +502,7 @@ Automata *directConstruction(TreeNode *node, wstring &alphabet)
                 }
                 else if (exists)
                 {
-                    /* wcout << "Adding transition to existing state" << endl; */
+
                     AlphabetTransition *newAlphabetTransition = new AlphabetTransition;
                     newAlphabetTransition->to = repeated;
                     newAlphabetTransition->from = transition;

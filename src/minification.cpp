@@ -15,7 +15,6 @@ Automata *minifyAutomata(Automata *automata)
     minified->start = startState;
     vector<AutomataState *> *finalStates = new vector<AutomataState *>();
     minified->finalStates = *finalStates;
-    // Crear particiones iniciales
     minifiedStatesCounter = 0;
     vector<Partition *> partitions;
     wstring alphabet = automata->alphabet;
@@ -42,20 +41,6 @@ Automata *minifyAutomata(Automata *automata)
     partitions.push_back(SI);
     partitions.push_back(SF);
 
-    wcout << L"SF: ";
-    for (const auto &item : *SF->states)
-    {
-        wcout << item->name << L" ";
-    }
-    wcout << endl;
-
-    wcout << L"SI: ";
-    for (const auto &item : *partitions[0]->states)
-    {
-        wcout << item->name << L" ";
-    }
-    wcout << endl;
-
     bool partitionAdded;
     do
     {
@@ -67,25 +52,24 @@ Automata *minifyAutomata(Automata *automata)
             set<AutomataState *> *toBeAdded = new set<AutomataState *>();
             for (const auto &state : *base->states)
             {
-                /* wcout << L"Trying with: " << state->name << L" and symbol: " << symbol << endl; */
+
                 for (const auto &transition : automata->transitions)
                 {
                     if (transition->from == state && transition->input == wstring(1, symbol))
                     {
-                        /* wcout << L"Transition found: " << transition->from->name << L" -> " << transition->to->name << L" with symbol: " << transition->input << endl; */
+
                         if (base->states->find(transition->to) != base->states->end())
                         {
-                            /* wcout << L"Transition target is in the base state set." << endl; */
                         }
                         else
                         {
-                            /* wcout << L"Transition target is not in the base state set." << endl; */
+
                             toBeAdded->insert(transition->from);
                         }
                     }
                 }
             }
-            // Acá
+
             bool found = false;
             for (const auto &partition : partitions)
             {
@@ -209,15 +193,6 @@ Automata *minifyAutomata(Automata *automata)
             }
         }
     }
-    for (auto partition : partitions)
-    {
-        wcout << L"Partition: " << partition->name << L" ";
-        for (const auto &item : *partition->states)
-        {
-            wcout << item->name << L" ";
-        }
-        wcout << endl;
-    }
 
     if (trapState != nullptr)
     {
@@ -235,17 +210,6 @@ Automata *minifyAutomata(Automata *automata)
         if (!isTrapStateUsed)
         {
             states->erase(std::remove(states->begin(), states->end(), trapState), states->end());
-        }
-    }
-
-    for (auto state : *states)
-    {
-        wcout << state->name << endl;
-        wcout << state->isAcceptable << endl;
-
-        for (auto transition : state->transitions)
-        {
-            wcout << L"  " << transition->input << L" -> " << transition->to->name << endl;
         }
     }
 
