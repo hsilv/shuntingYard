@@ -38,9 +38,6 @@ int main(int argc, char *argv[])
         TreeNode *tree = constructSyntaxTree(&postfix);
         TreeNode *treeAugmented = constructSyntaxTree(&postfixAugmented);
         TreeNode *augmentedParsedTree = parseTree(treeAugmented);
-        print2DUtil(treeAugmented, 0);
-        wcout << "\n--------------------------------------------------------------------------------" << endl;
-        print2DUtil(augmentedParsedTree, 0);
         wstring alphabet = getAlphabet(&postfix);
         wcout << "\n----------------------------------------\033[1;37m Por algoritmo McNaughton-Yamada-Thompson \033[0m----------------------------------------" << endl;
         Automata *mcythompson = thompson(tree, alphabet);

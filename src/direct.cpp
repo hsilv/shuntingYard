@@ -433,7 +433,6 @@ Automata *directConstruction(TreeNode *node, wstring &alphabet)
     firstPosFunction(node);
     lastPosFunction(node);
     nextPosFunction(node);
-    print2DUtil(node, 0);
 
     TreeNode *initialNode = findNodeByTag(node, L"1");
 
