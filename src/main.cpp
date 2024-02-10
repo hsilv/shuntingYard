@@ -37,6 +37,10 @@ int main(int argc, char *argv[])
         postfixAugmented = shuntingYard((wstring(wide_cstr) + L"#").c_str());
         TreeNode *tree = constructSyntaxTree(&postfix);
         TreeNode *treeAugmented = constructSyntaxTree(&postfixAugmented);
+        TreeNode *augmentedParsedTree = parseTree(treeAugmented);
+        print2DUtil(treeAugmented, 0);
+        wcout << "\n--------------------------------------------------------------------------------" << endl;
+        print2DUtil(augmentedParsedTree, 0);
         wstring alphabet = getAlphabet(&postfix);
         wcout << "\n----------------------------------------\033[1;37m Por algoritmo McNaughton-Yamada-Thompson \033[0m----------------------------------------" << endl;
         Automata *mcythompson = thompson(tree, alphabet);
@@ -52,12 +56,13 @@ int main(int argc, char *argv[])
         {
             alphabet.erase(pos, 1);
         }
-        Automata *direct = directConstruction(treeAugmented, alphabet);
+        Automata *direct = directConstruction(augmentedParsedTree, alphabet);
         completeAFD(direct);
         printAutomata(direct);
         generateGraph(direct, L"bydirect");
         wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos (Minificado) \033[0m----------------------------------------" << endl;
         Automata *subsetCopy = deepCopyAutomata(subset);
+        printAutomata(subsetCopy);
         Automata *minifiedSubset = minifyAutomata(subsetCopy);
         printAutomata(minifiedSubset);
         generateGraph(minifiedSubset, L"bysubsetsminified");

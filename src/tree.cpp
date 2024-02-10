@@ -1,4 +1,5 @@
 #include "tree.h"
+#include "shunting.h"
 
 TreeNode *createNode(shuntingToken *value)
 {
@@ -82,4 +83,45 @@ void print2DUtil(TreeNode *root, int space)
 void print2D(TreeNode *root)
 {
     print2DUtil(root, 0);
+}
+
+TreeNode *parseTree(TreeNode *root)
+{
+    if (root == nullptr)
+    {
+        return nullptr;
+    }
+
+    shuntingToken *newToken = new shuntingToken;
+    *newToken = *root->value;
+    TreeNode *newRoot = createNode(newToken);
+    newRoot->left = parseTree(root->left);
+    newRoot->right = parseTree(root->right);
+
+    if (wcscmp(newRoot->value->token, L"?") == 0)
+    {
+        newRoot->value->token = wcsdup(L"|");
+        newRoot->value->type = shuntingToken::BINARY_OPERATOR;
+        newRoot->value->precedence = 1;
+        shuntingToken *epsilonToken = new shuntingToken;
+        epsilonToken->token = wcsdup(L"ε");
+        epsilonToken->precedence = 0;
+        epsilonToken->type = shuntingToken::OPERAND;
+        newRoot->right = createNode(epsilonToken);
+    }
+    else if (wcscmp(newRoot->value->token, L"+") == 0)
+    {
+        newRoot->value->token = wcsdup(L".");
+        newRoot->value->type = shuntingToken::BINARY_OPERATOR;
+        newRoot->value->precedence = 2;
+        shuntingToken *starToken = new shuntingToken;
+        starToken->token = wcsdup(L"*");
+        starToken->precedence = 3;
+        starToken->type = shuntingToken::UNARY_OPERATOR;
+        TreeNode *starNode = createNode(starToken);
+        starNode->left = parseTree(newRoot->left); // Create a copy of newRoot->left
+        newRoot->right = starNode;
+    }
+
+    return newRoot;
 }

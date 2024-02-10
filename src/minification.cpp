@@ -6,7 +6,7 @@ int minifiedStatesCounter = 0;
 Automata *minifyAutomata(Automata *automata)
 {
 
-    Automata *minified = new Automata();
+    /* Automata *minified = new Automata();
     vector<AutomataState *> *states = new vector<AutomataState *>();
     minified->states = *states;
     vector<AutomataTransition *> *transitions = new vector<AutomataTransition *>();
@@ -192,7 +192,7 @@ Automata *minifyAutomata(Automata *automata)
 
     minified->states = *states;
     minified->transitions = *transitions;
-    minified->alphabet = automata->alphabet;
+    minified->alphabet = automata->alphabet; */
 
-    return minified;
+    return automata;
 }

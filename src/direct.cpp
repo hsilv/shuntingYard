@@ -87,6 +87,10 @@ bool anullableFunction(TreeNode *node)
             anullableFunction(node->left);
         }
     }
+    else if (wcscmp(node->value->token, L"ε") == 0)
+    {
+        node->anulable = true;
+    }
     else
     {
         node->anulable = false;
@@ -270,7 +274,10 @@ TreeNode *tagLeaves(TreeNode *node)
 
     if (node->left == nullptr && node->right == nullptr)
     {
-        node->tag = generateTag();
+        if (wcscmp(node->value->token, L"ε") != 0)
+        {
+            node->tag = generateTag();
+        }
     }
     else
     {
@@ -426,13 +433,14 @@ Automata *directConstruction(TreeNode *node, wstring &alphabet)
     firstPosFunction(node);
     lastPosFunction(node);
     nextPosFunction(node);
+    print2DUtil(node, 0);
 
     TreeNode *initialNode = findNodeByTag(node, L"1");
 
     vector<TreeNode *> finalStates;
     findNodesWithoutTagAndEmptyNextPos(node, finalStates);
 
-    if (initialNode == nullptr || finalStates.empty())
+    if (initialNode == nullptr /*  || finalStates.empty() */)
     {
         throw runtime_error("No se encontró el nodo inicial o los nodos finales");
     }

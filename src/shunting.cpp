@@ -10,11 +10,11 @@ int getPrecedence(const wchar_t *operatorToken)
     {
         return 1;
     }
-    else if (wcscmp(operatorToken, L".") == 0 || wcscmp(operatorToken, L"?") == 0)
+    else if (wcscmp(operatorToken, L".") == 0)
     {
         return 2;
     }
-    else if (wcscmp(operatorToken, L"*") == 0 || wcscmp(operatorToken, L"+") == 0)
+    else if (wcscmp(operatorToken, L"*") == 0 || wcscmp(operatorToken, L"+") == 0 || wcscmp(operatorToken, L"?") == 0)
     {
         return 3;
     }
