@@ -8,6 +8,7 @@
 #include "graphviz.h"
 #include "subsets.h"
 #include "direct.h"
+#include "minification.h"
 
 Stack<shuntingToken> postfix;
 Stack<shuntingToken> postfixAugmented;
@@ -45,6 +46,14 @@ int main(int argc, char *argv[])
         Automata *direct = directConstruction(treeAugmented, alphabet);
         printAutomata(direct);
         generateGraph(direct, L"bydirect");
+        wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos (Minificado) \033[0m----------------------------------------" << endl;
+        Automata *minifiedSubset = minifyAutomata(subset);
+        printAutomata(minifiedSubset);
+        generateGraph(minifiedSubset, L"bysubsetsminified");
+        wcout << "\n----------------------------------------\033[1;37m Por Construccion directa (Minificado) \033[0m----------------------------------------" << endl;
+        Automata *minifiedDirect = minifyAutomata(direct);
+        printAutomata(minifiedDirect);
+        generateGraph(minifiedDirect, L"bydirectminified");
     }
     catch (const exception &e)
     {

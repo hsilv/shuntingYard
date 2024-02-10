@@ -311,7 +311,7 @@ void printlPos(TreeNode *node)
 
     wcout << L"Node value: " << node->value->token << L" ";
     wcout << L"Node tag: " << node->tag << L" ";
-    wcout << L"Node firstPos: ";
+    wcout << L"Node lastPos: ";
     for (const auto &tag : *(node->lastPos))
     {
         wcout << tag << L" ";
@@ -412,7 +412,7 @@ AutomataState *findStateByName(std::vector<AutomataState *> states, const std::w
             return state;
         }
     }
-    return nullptr; // return null if no state with the given name is found
+    return nullptr;
 }
 
 Automata *directConstruction(TreeNode *node, wstring &alphabet)
@@ -424,8 +424,13 @@ Automata *directConstruction(TreeNode *node, wstring &alphabet)
     node = tagLeaves(node);
     anullableFunction(node);
     firstPosFunction(node);
+    printfPos(node);
     lastPosFunction(node);
+    printlPos(node);
     nextPosFunction(node);
+    printnPos(node);
+
+    print2DUtil(node, 0);
 
     TreeNode *initialNode = findNodeByTag(node, L"1");
 
@@ -456,75 +461,80 @@ Automata *directConstruction(TreeNode *node, wstring &alphabet)
         for (int i = 0; i < transitionTableSize; i++)
         {
             TransitionItem *transition = transitionTable[i];
-
             for (const auto &symbol : alphabet)
             {
 
-                for (const auto &position : *transition->positions)
+                set<TreeNode *> nodes;
+                set<wstring> *subsetTags = new set<wstring>;
+                /* wcout << L"Searching for tag:"; */
+
+                for (const auto &item : *transition->positions)
                 {
-                    set<TreeNode *> nodes;
-                    set<wstring> *subsetTags = new set<wstring>;
-                    findNodesByTagAndToken(node, position, wstring(1, symbol), nodes);
+                    findNodesByTagAndToken(node, item, wstring(1, symbol), nodes);
+                    /* wcout << L" " << item; */
+                }
+                /* wcout << L" and token: " << wstring(1, symbol); */
 
-                    if (nodes.size() == 1)
+                for (const auto &item : nodes)
+                {
+                    subsetTags->insert(item->nextPos->begin(), item->nextPos->end());
+                }
+
+                /* wcout << L" gives: { ";
+                for (const auto &tag : *subsetTags)
+                {
+                    wcout << tag << L", ";
+                }
+                wcout << L"} " << endl; */
+
+                bool exists = false;
+                TransitionItem *repeated = nullptr;
+                for (const auto &item : transitionTable)
+                {
+                    if (*item->positions == *subsetTags)
                     {
+                        exists = true;
+                        repeated = item;
+                        break;
+                    }
+                }
 
-                        set<wstring> *nextPos = (*nodes.begin())->nextPos;
-                        for (const auto &item : *nextPos)
-                        {
+                if (!exists && !subsetTags->empty())
+                {
+                    TransitionItem *newTransition = new TransitionItem;
+                    newTransition->positions = subsetTags;
+                    newTransition->stateName = generateDirectState();
+                    newTransition->transitions = new vector<AlphabetTransition *>;
+                    AlphabetTransition *newAlphabetTransition = new AlphabetTransition;
+                    newAlphabetTransition->to = newTransition;
+                    newAlphabetTransition->from = transition;
+                    newAlphabetTransition->input = wcsdup(&symbol);
+                    transition->transitions->push_back(newAlphabetTransition);
+                    allTransitions.push_back(newAlphabetTransition);
+                    transitionTable.push_back(newTransition);
+                    newStateAdded = true;
+                    transitionTableSize++;
+                }
+                else if (exists)
+                {
+                    /* wcout << "Adding transition to existing state" << endl; */
+                    AlphabetTransition *newAlphabetTransition = new AlphabetTransition;
+                    newAlphabetTransition->to = repeated;
+                    newAlphabetTransition->from = transition;
+                    newAlphabetTransition->input = wcsdup(wstring(1, symbol).c_str());
 
-                            subsetTags->insert(item);
-                        }
+                    auto it = std::find_if(transition->transitions->begin(), transition->transitions->end(),
+                                           [newAlphabetTransition](const AlphabetTransition *at)
+                                           {
+                                               return at->to == newAlphabetTransition->to &&
+                                                      at->from == newAlphabetTransition->from &&
+                                                      *at->input == *newAlphabetTransition->input;
+                                           });
 
-                        bool exists = false;
-                        TransitionItem *repeated = nullptr;
-                        for (const auto &item : transitionTable)
-                        {
-                            if (*item->positions == *nextPos)
-                            {
-                                exists = true;
-                                repeated = item;
-                                break;
-                            }
-                        }
-
-                        if (!exists && !subsetTags->empty())
-                        {
-                            TransitionItem *newTransition = new TransitionItem;
-                            newTransition->positions = subsetTags;
-                            newTransition->stateName = generateDirectState();
-                            newTransition->transitions = new vector<AlphabetTransition *>;
-                            AlphabetTransition *newAlphabetTransition = new AlphabetTransition;
-                            newAlphabetTransition->to = newTransition;
-                            newAlphabetTransition->from = transition;
-                            newAlphabetTransition->input = wcsdup(&symbol);
-                            transition->transitions->push_back(newAlphabetTransition);
-                            allTransitions.push_back(newAlphabetTransition);
-                            transitionTable.push_back(newTransition);
-                            newStateAdded = true;
-                            transitionTableSize++;
-                        }
-                        else if (exists)
-                        {
-                            AlphabetTransition *newAlphabetTransition = new AlphabetTransition;
-                            newAlphabetTransition->to = repeated;
-                            newAlphabetTransition->from = transition;
-                            newAlphabetTransition->input = wcsdup(wstring(1, symbol).c_str());
-
-                            auto it = std::find_if(transition->transitions->begin(), transition->transitions->end(),
-                                                   [newAlphabetTransition](const AlphabetTransition *at)
-                                                   {
-                                                       return at->to == newAlphabetTransition->to &&
-                                                              at->from == newAlphabetTransition->from &&
-                                                              *at->input == *newAlphabetTransition->input;
-                                                   });
-
-                            if (it == transition->transitions->end())
-                            {
-                                transition->transitions->push_back(newAlphabetTransition);
-                                allTransitions.push_back(newAlphabetTransition);
-                            }
-                        }
+                    if (it == transition->transitions->end())
+                    {
+                        transition->transitions->push_back(newAlphabetTransition);
+                        allTransitions.push_back(newAlphabetTransition);
                     }
                 }
             }
@@ -533,25 +543,19 @@ Automata *directConstruction(TreeNode *node, wstring &alphabet)
 
     for (int i = 0; i < transitionTable.size(); i++)
     {
-        TransitionItem *transition = transitionTable[i];
-        bool isAcceptable = true;
-
-        for (int j = 0; j < transition->transitions->size(); j++)
+        if (*(transitionTable[i]->positions) == *(initialNode->nextPos))
         {
-            if (transition->transitions->at(j)->from->stateName != transition->transitions->at(j)->to->stateName)
+            initialTransition->isInitial = true;
+        }
+        if (finalStates.size() > 0)
+        {
+            for (int j = 0; j < finalStates.size(); j++)
             {
-                isAcceptable = false;
-                break;
+                if (transitionTable[i]->positions->find(finalStates[j]->tag) != transitionTable[i]->positions->end())
+                {
+                    transitionTable[i]->isFinal = true;
+                }
             }
-        }
-
-        if (isAcceptable)
-        {
-            transition->isFinal = true;
-        }
-        else
-        {
-            transition->isFinal = false;
         }
     }
 
@@ -559,7 +563,6 @@ Automata *directConstruction(TreeNode *node, wstring &alphabet)
     {
         AutomataState *state = new AutomataState;
         state->name = wcsdup(wstring(transitionTable[i]->stateName).c_str());
-        wcout << state->name << endl;
         state->isAcceptable = transitionTable[i]->isFinal;
         automata->states.push_back(state);
         if (state->isAcceptable)
@@ -590,10 +593,6 @@ Automata *directConstruction(TreeNode *node, wstring &alphabet)
     automata->alphabet = alphabet;
 
     automata->start = start;
-
-    /* wcout << automata->start->name << endl; */
-
-    print2DUtil(node, 0);
 
     return automata;
 }
