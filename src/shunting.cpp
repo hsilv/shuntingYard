@@ -43,6 +43,15 @@ const wchar_t *clean(wchar_t *&input)
 
 bool isOperand(const wchar_t *token)
 {
+    // Si el token es un caracter escapado, trátalo como un operando
+    if (token[0] == L'\\' && wcschr(L"|*+?.()", token[1]))
+    {
+        return true;
+    }
+    else if (wcschr(L"|*+?.()", token[0]) && token[-1] == L'\\')
+    {
+        return true;
+    }
     return !wcschr(L"|*+?.()", token[0]);
 }
 
@@ -72,54 +81,104 @@ Stack<shuntingToken> getTokens(const wchar_t *&infix)
 
         const wchar_t *actualChar = wstring(1, infix[i]).c_str();
         const wchar_t *rightChar = wstring(1, infix[i + 1]).c_str();
-        if (isOperand(actualChar))
+        if (actualChar[0] == L'\\')
         {
-            shuntingToken operand;
-            operand.token = wcsdup(actualChar);
-            operand.precedence = getPrecedence(actualChar);
-            operand.type = shuntingToken::OPERAND;
-            tokens.push(operand);
-
-            if (wcscmp(rightChar, L"") != 0 && isOperand(rightChar))
+            if (i == infixLength - 1 || rightChar[0] == L'\0')
             {
-                shuntingToken operatorToken;
-                operatorToken.token = wcsdup(L".");
-                operatorToken.precedence = getPrecedence(L".");
-                operatorToken.type = getOperatorType(L".");
-                tokens.push(operatorToken);
+                std::string errorMsg = "Regexp Syntax Error: Escape character '\\' at the end of the expression or followed by nothing";
+                throw std::invalid_argument(errorMsg);
             }
-            else if (wcscmp(rightChar, L"(") == 0)
+            else
             {
-                shuntingToken operatorToken;
-                operatorToken.token = wcsdup(L".");
-                operatorToken.precedence = getPrecedence(L".");
-                operatorToken.type = getOperatorType(L".");
-                tokens.push(operatorToken);
+                shuntingToken operand;
+                operand.token = wcsdup((wstring(rightChar)).c_str());
+                operand.precedence = getPrecedence(actualChar);
+                operand.type = shuntingToken::OPERAND;
+                tokens.push(operand);
+                i++;
+
+                // Verificar si el siguiente carácter es un operando
+                if (i < infixLength - 1 && isOperand(wstring(1, infix[i + 1]).c_str()))
+                {
+                    shuntingToken operatorToken;
+                    operatorToken.token = wcsdup(L".");
+                    operatorToken.precedence = getPrecedence(L".");
+                    operatorToken.type = getOperatorType(L".");
+                    tokens.push(operatorToken);
+                }
             }
         }
         else
         {
-            shuntingToken operatorToken;
-            operatorToken.token = wcsdup(actualChar);
-            operatorToken.precedence = getPrecedence(actualChar);
-            operatorToken.type = getOperatorType(actualChar);
-            tokens.push(operatorToken);
+            if (isOperand(actualChar))
+            {
+                shuntingToken operand;
+                operand.token = wcsdup(actualChar);
+                operand.precedence = getPrecedence(actualChar);
+                operand.type = shuntingToken::OPERAND;
+                tokens.push(operand);
 
-            if (operatorToken.type == shuntingToken::UNARY_OPERATOR && (isOperand(rightChar) || wcscmp(rightChar, L"(") == 0))
-            {
-                shuntingToken concatToken;
-                concatToken.token = wcsdup(L".");
-                concatToken.precedence = getPrecedence(L".");
-                concatToken.type = getOperatorType(L".");
-                tokens.push(concatToken);
+                if (wcscmp(rightChar, L"") != 0 && isOperand(rightChar))
+                {
+                    shuntingToken operatorToken;
+                    operatorToken.token = wcsdup(L".");
+                    operatorToken.precedence = getPrecedence(L".");
+                    operatorToken.type = getOperatorType(L".");
+                    tokens.push(operatorToken);
+                }
+                else if (wcscmp(rightChar, L"(") == 0)
+                {
+                    shuntingToken operatorToken;
+                    operatorToken.token = wcsdup(L".");
+                    operatorToken.precedence = getPrecedence(L".");
+                    operatorToken.type = getOperatorType(L".");
+                    tokens.push(operatorToken);
+                }
             }
-            else if (wcscmp(operatorToken.token, L")") == 0 && (isOperand(rightChar) || wcscmp(rightChar, L"(") == 0))
+            else
             {
-                shuntingToken concatToken;
-                concatToken.token = wcsdup(L".");
-                concatToken.precedence = getPrecedence(L".");
-                concatToken.type = getOperatorType(L".");
-                tokens.push(concatToken);
+                shuntingToken operatorToken;
+                operatorToken.token = wcsdup(actualChar);
+                operatorToken.precedence = getPrecedence(actualChar);
+                operatorToken.type = getOperatorType(actualChar);
+                tokens.push(operatorToken);
+
+                /* if (operatorToken.type == shuntingToken::UNARY_OPERATOR &&
+                    (i == 0 || (!isOperand(wstring(1, infix[i - 1]).c_str()) && infix[i - 2] != L'\\')))
+                {
+                    wcout << infix[i - 1] << endl;
+                    std::string errorMsg = "Error de sintaxis: Operador unario '";
+                    errorMsg += std::string(actualChar, actualChar + wcslen(actualChar)); // Convertir wchar_t a std::string
+                    errorMsg += "' sin operando a su izquierda. Si quieres usar el operador como un literal, escápalo con una barra invertida '\\'";
+                    throw std::invalid_argument(errorMsg);
+                }
+                else if (operatorToken.type == shuntingToken::BINARY_OPERATOR &&
+                         (i == 0 || (!isOperand(wstring(1, infix[i - 1]).c_str()) && infix[i - 2] != L'\\') ||
+                          i == infixLength - 1 || !isOperand(wstring(1, infix[i + 1]).c_str())))
+                {
+                    std::string errorMsg = "Error de sintaxis: Operador binario '";
+                    errorMsg += std::string(actualChar, actualChar + wcslen(actualChar)); // Convertir wchar_t a std::string
+                    errorMsg += "' sin operando a su izquierda o derecha. Si quieres usar el operador como un literal, escápalo con una barra invertida '\\'";
+                    throw std::invalid_argument(errorMsg);
+                }
+
+                else */
+                if (operatorToken.type == shuntingToken::UNARY_OPERATOR && (isOperand(rightChar) || wcscmp(rightChar, L"(") == 0))
+                {
+                    shuntingToken concatToken;
+                    concatToken.token = wcsdup(L".");
+                    concatToken.precedence = getPrecedence(L".");
+                    concatToken.type = getOperatorType(L".");
+                    tokens.push(concatToken);
+                }
+                else if (wcscmp(operatorToken.token, L")") == 0 && (isOperand(rightChar) || wcscmp(rightChar, L"(") == 0))
+                {
+                    shuntingToken concatToken;
+                    concatToken.token = wcsdup(L".");
+                    concatToken.precedence = getPrecedence(L".");
+                    concatToken.type = getOperatorType(L".");
+                    tokens.push(concatToken);
+                }
             }
         }
     }
@@ -134,22 +193,35 @@ wstring expandRanges(const wstring &input)
     {
         if (input[i] == L'[')
         {
-            size_t end = input.find(L']', i);
-            if (end != wstring::npos && end > i + 2 && input[i + 2] == L'-')
+            bool openingBracketEscaped = (i > 0 && input[i - 1] == L'\\');
+            size_t end = input.find(L']', i + 1);
+            if (end != wstring::npos)
             {
-                wchar_t startChar = input[i + 1];
-                wchar_t endChar = input[i + 3];
-                output += L"("; // Add opening parenthesis
-                for (wchar_t c = startChar; c <= endChar; ++c)
+                bool closingBracketEscaped = (end > 0 && input[end - 1] == L'\\');
+                if (openingBracketEscaped != closingBracketEscaped)
                 {
-                    output += c;
-                    if (c != endChar)
-                    {
-                        output += L"|";
-                    }
+                    throw std::invalid_argument("Syntax Regexp Error: Unmatched escaped bracket. Cannot mix escaped and unescaped brackets in the same character class");
                 }
-                output += L")"; // Add closing parenthesis
-                i = end;
+                else if (!openingBracketEscaped && end > i + 2 && input[i + 2] == L'-')
+                {
+                    wchar_t startChar = input[i + 1];
+                    wchar_t endChar = input[i + 3];
+                    output += L"(";
+                    for (wchar_t c = startChar; c <= endChar; ++c)
+                    {
+                        output += c;
+                        if (c != endChar)
+                        {
+                            output += L"|";
+                        }
+                    }
+                    output += L")";
+                    i = end;
+                }
+                else
+                {
+                    output += input[i];
+                }
             }
             else
             {
@@ -180,6 +252,70 @@ Stack<shuntingToken> shuntingYard(const wchar_t *infix)
     Stack<shuntingToken> output;
 
     tokens.reverse();
+
+    for (int i = 0; i < tokens.getSize(); i++)
+    {
+        /*  wcout << L"Token: " << tokens.getTop()[-i].token << L" Type: " << tokens.getTop()[-i].type << endl;
+         wcout << L"Size: " << tokens.getSize() << endl; */
+        if (i == 0 && tokens.getTop()[-i].type == shuntingToken::UNARY_OPERATOR)
+        {
+            throw invalid_argument("Regexp Syntax Error: Unary operator at the beginning of the expression");
+        }
+        else if (i == 0 && tokens.getTop()[-i].type == shuntingToken::BINARY_OPERATOR)
+        {
+            throw invalid_argument("Regexp Syntax Error: Binary operator at the beginning of the expression");
+        }
+        else if (tokens.getTop()[-i].type == shuntingToken::BINARY_OPERATOR)
+        {
+            if (i - 1 < 0 || i + 1 > tokens.getSize())
+            {
+                throw invalid_argument("Regexp Syntax Error: Binary operator at the end of the expression");
+            }
+            else if (tokens.getTop()[-i - 1].type == shuntingToken::BINARY_OPERATOR)
+            {
+                throw invalid_argument("Regexp Syntax Error: Binary operator followed by another binary operator");
+            }
+            else if (tokens.getTop()[-i + 1].type == shuntingToken::BINARY_OPERATOR)
+            {
+                throw invalid_argument("Regexp Syntax Error: Binary operator followed by another binary operator");
+            }
+        }
+        else if (tokens.getTop()[-i].type == shuntingToken::UNARY_OPERATOR)
+        {
+            bool operandFound = false;
+            for (int j = tokens.getSize() - 2; j >= 0; j--)
+            {
+                if (tokens.getTop()[-j].type == shuntingToken::OPERAND)
+                {
+                    operandFound = true;
+                    break;
+                }
+            }
+
+            if (!operandFound)
+            {
+                std::string errorMsg = "Regexp Syntax Error: Mismatched operators. Unary operator '";
+                errorMsg += std::string(tokens.getTop()[-i].token, tokens.getTop()[-i].token + wcslen(tokens.getTop()[-i].token)); // Convertir wchar_t a std::string
+                errorMsg += "' without operand";
+                throw std::invalid_argument(errorMsg);
+            }
+        }
+        else if (tokens.getTop()[-i].type == shuntingToken::BRACKET)
+        {
+            if (i + 1 > tokens.getSize() && wcscmp(tokens.getTop()[-1].token, L"(") == 0)
+            {
+                throw invalid_argument("Regexp Syntax Error: Mismatched parenthesis");
+            }
+            else if (i + 1 < tokens.getSize() && tokens.getTop()[-i - 1].type == shuntingToken::BINARY_OPERATOR && wcscmp(tokens.getTop()[-i].token, L"(") == 0)
+            {
+                throw invalid_argument("Regexp Syntax Error: Opening parenthesis before binary operator");
+            }
+            else if (i - 1 > 0 && tokens.getTop()[-i + 1].type == shuntingToken::BINARY_OPERATOR && wcscmp(tokens.getTop()[-i].token, L")") == 0)
+            {
+                throw invalid_argument("Regexp Syntax Error: Closing parenthesis after binary operator");
+            }
+        }
+    }
 
     for (int i = 0; tokens.getSize() > 0; i++)
     {

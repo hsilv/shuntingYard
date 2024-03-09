@@ -67,18 +67,20 @@ bool MyApp::OnInit()
         postfix = shuntingYard(wide_cstr);
         postfixAugmented = shuntingYard((wstring(wide_cstr) + L"#").c_str());
         TreeNode *tree = constructSyntaxTree(&postfix);
+        print2D(tree);
         TreeNode *treeAugmented = constructSyntaxTree(&postfixAugmented);
         TreeNode *augmentedParsedTree = parseTree(treeAugmented);
+        print2D(treeAugmented);
         wstring alphabet = getAlphabet(&postfix);
         wcout << "\n----------------------------------------\033[1;37m Por algoritmo McNaughton-Yamada-Thompson \033[0m----------------------------------------" << endl;
         Automata *mcythompson = thompson(tree, alphabet);
         printAutomata(mcythompson);
         generateGraph(mcythompson, L"mcythompson");
-        wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos \033[0m----------------------------------------" << endl;
+        /*wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos \033[0m----------------------------------------" << endl;
         Automata *subset = subsetConstruction(mcythompson);
         printAutomata(subset);
-        generateGraph(subset, L"bysubsets");
-        wcout << "\n----------------------------------------\033[1;37m Por Construccion directa \033[0m----------------------------------------" << endl;
+        generateGraph(subset, L"bysubsets"); */
+        /* wcout << "\n----------------------------------------\033[1;37m Por Construccion directa \033[0m----------------------------------------" << endl;
         size_t pos = alphabet.find(L'ε');
         if (pos != std::wstring::npos)
         {
@@ -87,36 +89,34 @@ bool MyApp::OnInit()
         Automata *direct = directConstruction(augmentedParsedTree, alphabet);
         completeAFD(direct);
         printAutomata(direct);
-        generateGraph(direct, L"bydirect");
-        wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos (Minificado) \033[0m----------------------------------------" << endl;
-        Automata *subsetCopy = deepCopyAutomata(subset);
-        printAutomata(subsetCopy);
-        Automata *minifiedSubset = minifyAutomata(subsetCopy);
-        printAutomata(minifiedSubset);
-        generateGraph(minifiedSubset, L"bysubsetsminified");
-        wcout << "\n----------------------------------------\033[1;37m Por Construccion directa (Minificado) \033[0m----------------------------------------" << endl;
+        generateGraph(direct, L"bydirect"); */
+        /*   wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos (Minificado) \033[0m----------------------------------------" << endl;
+          Automata *subsetCopy = deepCopyAutomata(subset);
+          printAutomata(subsetCopy);
+          Automata *minifiedSubset = minifyAutomata(subsetCopy);
+          printAutomata(minifiedSubset);
+          generateGraph(minifiedSubset, L"bysubsetsminified"); */
+        /* wcout << "\n----------------------------------------\033[1;37m Por Construccion directa (Minificado) \033[0m----------------------------------------" << endl;
         Automata *minifiedDirect = minifyAutomata(direct);
         printAutomata(minifiedDirect);
-        generateGraph(minifiedDirect, L"bydirectminified");
+        generateGraph(minifiedDirect, L"bydirectminified"); */
 
-        wcout << L"\n\033[1;37mSimulacion de AFD por subconjuntos\033[0m" << endl;
-        simulateAutomata(subset, expresion);
-        wcout << L"\n\033[1;37mSimulacion de AFD por construccion directa\033[0m" << endl;
-        simulateAutomata(direct, expresion);
-        wcout << L"\n\033[1;37mSimulacion de AFD por subconjuntos (minificado)\033[0m" << endl;
-        simulateAutomata(minifiedSubset, expresion);
-        wcout << L"\n\033[1;37mSimulacion de AFD por construccion directa (minificado)\033[0m" << endl;
-        simulateAutomata(minifiedDirect, expresion);
-        wcout << L"\n\033[1;37mSimulacion de AFN por McNaughton-Yamada-Thompson\033[0m" << endl;
-        simulateNFA(mcythompson, expresion);
+        /*  wcout << L"\n\033[1;37mSimulacion de AFD por subconjuntos\033[0m" << endl;
+         simulateAutomata(subset, expresion); */
+        /* wcout << L"\n\033[1;37mSimulacion de AFD por construccion directa\033[0m" << endl;
+        simulateAutomata(direct, expresion); */
+        /*  wcout << L"\n\033[1;37mSimulacion de AFD por subconjuntos (minificado)\033[0m" << endl;
+         simulateAutomata(minifiedSubset, expresion); */
+        /* wcout << L"\n\033[1;37mSimulacion de AFD por construccion directa (minificado)\033[0m" << endl;
+        simulateAutomata(minifiedDirect, expresion); */
+        /* wcout << L"\n\033[1;37mSimulacion de AFN por McNaughton-Yamada-Thompson\033[0m" << endl;
+        simulateNFA(mcythompson, expresion); */
     }
     catch (const exception &e)
     {
         cerr << "\033[1;31m"
              << "ERROR: " << e.what() << "\033[0m" << endl;
     }
-
-    /* wcout << L"A validar: " << expresion << endl; */
 
     // Fin de la ejecución e impresión de tiempo transcurrido
     auto end = chrono::high_resolution_clock::now();

@@ -98,7 +98,7 @@ TreeNode *parseTree(TreeNode *root)
     newRoot->left = parseTree(root->left);
     newRoot->right = parseTree(root->right);
 
-    if (wcscmp(newRoot->value->token, L"?") == 0)
+    if (wcscmp(newRoot->value->token, L"?") == 0 && newRoot->value->type == shuntingToken::UNARY_OPERATOR)
     {
         newRoot->value->token = wcsdup(L"|");
         newRoot->value->type = shuntingToken::BINARY_OPERATOR;
@@ -109,7 +109,7 @@ TreeNode *parseTree(TreeNode *root)
         epsilonToken->type = shuntingToken::OPERAND;
         newRoot->right = createNode(epsilonToken);
     }
-    else if (wcscmp(newRoot->value->token, L"+") == 0)
+    else if (wcscmp(newRoot->value->token, L"+") == 0 && newRoot->value->type == shuntingToken::UNARY_OPERATOR)
     {
         newRoot->value->token = wcsdup(L".");
         newRoot->value->type = shuntingToken::BINARY_OPERATOR;
