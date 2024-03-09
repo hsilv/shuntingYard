@@ -4,8 +4,39 @@
 #include <string>
 #include <locale>
 #include <codecvt>
+#include <algorithm>
 
 using namespace std;
+
+string escapeSpecialChars(const string &input)
+{
+    string output = input;
+    size_t pos = 0;
+    while ((pos = output.find('"', pos)) != string::npos)
+    {
+        output.replace(pos, 1, "\\\"");
+        pos += 2;
+    }
+    pos = 0;
+    while ((pos = output.find('\\', pos)) != string::npos)
+    {
+        output.replace(pos, 1, "\\\\");
+        pos += 2;
+    }
+    pos = 0;
+    while ((pos = output.find('(', pos)) != string::npos)
+    {
+        output.replace(pos, 1, "\\(");
+        pos += 2;
+    }
+    pos = 0;
+    while ((pos = output.find(')', pos)) != string::npos)
+    {
+        output.replace(pos, 1, "\\)");
+        pos += 2;
+    }
+    return output;
+}
 
 void generateGraph(Automata *automata, wstring filename)
 {
@@ -54,6 +85,9 @@ void generateGraph(Automata *automata, wstring filename)
 
         wstring inputW(transition->input);
         string input = converter.to_bytes(inputW);
+
+        // Escape special characters
+        input = escapeSpecialChars(input);
 
         dotScript += fromStateName + " -> " + toStateName + " [ label = \"" + input + "\" ];\n";
     }

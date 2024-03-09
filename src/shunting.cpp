@@ -75,37 +75,36 @@ Stack<shuntingToken> getTokens(const wchar_t *&infix)
 {
     Stack<shuntingToken> tokens;
     const int infixLength = wcslen(infix);
+    bool isEscaped = false;
 
     for (int i = 0; i < infixLength; i++)
     {
 
         const wchar_t *actualChar = wstring(1, infix[i]).c_str();
         const wchar_t *rightChar = wstring(1, infix[i + 1]).c_str();
-        if (actualChar[0] == L'\\')
+        if (actualChar[0] == L'\\' && !isEscaped)
         {
-            if (i == infixLength - 1 || rightChar[0] == L'\0')
-            {
-                std::string errorMsg = "Regexp Syntax Error: Escape character '\\' at the end of the expression or followed by nothing";
-                throw std::invalid_argument(errorMsg);
-            }
-            else
-            {
-                shuntingToken operand;
-                operand.token = wcsdup((wstring(rightChar)).c_str());
-                operand.precedence = getPrecedence(actualChar);
-                operand.type = shuntingToken::OPERAND;
-                tokens.push(operand);
-                i++;
+            isEscaped = true;
+            continue;
+        }
 
-                // Verificar si el siguiente carácter es un operando
-                if (i < infixLength - 1 && isOperand(wstring(1, infix[i + 1]).c_str()))
-                {
-                    shuntingToken operatorToken;
-                    operatorToken.token = wcsdup(L".");
-                    operatorToken.precedence = getPrecedence(L".");
-                    operatorToken.type = getOperatorType(L".");
-                    tokens.push(operatorToken);
-                }
+        if (isEscaped)
+        {
+            shuntingToken operand;
+            operand.token = wcsdup((wstring(actualChar)).c_str());
+            operand.precedence = getPrecedence(actualChar);
+            operand.type = shuntingToken::OPERAND;
+            tokens.push(operand);
+            isEscaped = false;
+
+            // Add concatenation if next character is not an operator or closing parenthesis
+            if (wcscmp(rightChar, L"") != 0 && !isOperand(rightChar) && wcscmp(rightChar, L")") != 0)
+            {
+                shuntingToken operatorToken;
+                operatorToken.token = wcsdup(L".");
+                operatorToken.precedence = getPrecedence(L".");
+                operatorToken.type = getOperatorType(L".");
+                tokens.push(operatorToken);
             }
         }
         else
