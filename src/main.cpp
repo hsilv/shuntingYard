@@ -1,3 +1,8 @@
+#include <wx/wx.h>
+#include <wx/stc/stc.h>
+#include <wx/filedlg.h>
+#include <wx/textfile.h>
+
 #include "shunting.h"
 #include <chrono>
 #include <iostream>
@@ -14,7 +19,33 @@
 Stack<shuntingToken> postfix;
 Stack<shuntingToken> postfixAugmented;
 
-int main(int argc, char *argv[])
+class MyApp : public wxApp
+{
+public:
+    virtual bool OnInit();
+};
+
+class MyFrame : public wxFrame
+{
+public:
+    MyFrame(const wxString &title);
+
+    // Agrega un manejador de eventos para el elemento de menú "Open"
+    void OnOpen(wxCommandEvent &event);
+
+private:
+    wxStyledTextCtrl *textCtrl;
+
+    wxDECLARE_EVENT_TABLE();
+};
+
+wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
+    EVT_MENU(wxID_OPEN, MyFrame::OnOpen)
+        wxEND_EVENT_TABLE()
+
+            wxIMPLEMENT_APP(MyApp);
+
+bool MyApp::OnInit()
 {
     if (argc != 3)
     {
@@ -94,5 +125,66 @@ int main(int argc, char *argv[])
     wss << elapsed.count();
     wstring elapsed_wstr = wss.str();
     wcout << L"\n\033[1;32mElapsed time: " << elapsed_wstr << L" ms\n\033[0m\n";
-    return 0;
+    MyFrame *frame = new MyFrame("Code Editor");
+    frame->Show(true);
+    return true;
 }
+
+MyFrame::MyFrame(const wxString &title)
+    : wxFrame(NULL, wxID_ANY, title)
+{
+    // Crea un nuevo editor de texto
+    textCtrl = new wxStyledTextCtrl(this, wxID_ANY);
+
+    // Habilita la numeración de líneas
+    textCtrl->SetMarginType(0, wxSTC_MARGIN_NUMBER);
+    textCtrl->SetMarginWidth(0, textCtrl->TextWidth(wxSTC_STYLE_LINENUMBER, "_99999"));
+
+    // Habilita las tabulaciones
+    textCtrl->SetTabWidth(4);
+    textCtrl->SetUseTabs(false);
+
+    // Crea un nuevo menú
+    wxMenu *fileMenu = new wxMenu;
+
+    // Agrega elementos al menú
+    fileMenu->Append(wxID_NEW, "&New");
+    fileMenu->Append(wxID_OPEN, "&Open");
+    fileMenu->Append(wxID_SAVE, "&Save");
+    fileMenu->Append(wxID_EXIT, "E&xit");
+
+    // Crea una nueva barra de menú
+    wxMenuBar *menuBar = new wxMenuBar;
+
+    // Agrega el menú a la barra de menú
+    menuBar->Append(fileMenu, "&File");
+
+    // Asigna la barra de menú a la ventana
+    SetMenuBar(menuBar);
+}
+
+void MyFrame::OnOpen(wxCommandEvent &event)
+{
+    wxFileDialog openFileDialog(this, _("Open file"), "", "",
+                                "Text files (*.txt)|*.txt", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+
+    if (openFileDialog.ShowModal() == wxID_CANCEL)
+        return; // the user changed idea...
+
+    // proceed loading the file chosen by the user;
+    wxTextFile file;
+    file.Open(openFileDialog.GetPath());
+    textCtrl->SetText(file.GetFirstLine());
+
+    while (!file.Eof())
+    {
+        textCtrl->AppendText("\n");
+        textCtrl->AppendText(file.GetNextLine());
+    }
+}
+
+/* int main(int argc, char *argv[])
+{
+
+    return wxEntry(argc, argv);
+} */
