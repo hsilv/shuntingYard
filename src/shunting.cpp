@@ -82,6 +82,7 @@ Stack<shuntingToken> getTokens(const wchar_t *&infix)
 
         const wchar_t *actualChar = wstring(1, infix[i]).c_str();
         const wchar_t *rightChar = wstring(1, infix[i + 1]).c_str();
+        const wchar_t *rightMostChar = wstring(1, infix[i + 2]).c_str();
         if (actualChar[0] == L'\\' && !isEscaped)
         {
             isEscaped = true;
@@ -97,8 +98,15 @@ Stack<shuntingToken> getTokens(const wchar_t *&infix)
             tokens.push(operand);
             isEscaped = false;
 
-            // Add concatenation if next character is not an operator or closing parenthesis
-            if (wcscmp(rightChar, L"") != 0 && !isOperand(rightChar) && wcscmp(rightChar, L")") != 0)
+            if (wcscmp(rightChar, L"") != 0 && isOperand(rightChar))
+            {
+                shuntingToken operatorToken;
+                operatorToken.token = wcsdup(L".");
+                operatorToken.precedence = getPrecedence(L".");
+                operatorToken.type = getOperatorType(L".");
+                tokens.push(operatorToken);
+            }
+            else if (wcscmp(rightChar, L"(") == 0 && wcscmp(rightMostChar, L")") != 0)
             {
                 shuntingToken operatorToken;
                 operatorToken.token = wcsdup(L".");
@@ -125,7 +133,7 @@ Stack<shuntingToken> getTokens(const wchar_t *&infix)
                     operatorToken.type = getOperatorType(L".");
                     tokens.push(operatorToken);
                 }
-                else if (wcscmp(rightChar, L"(") == 0)
+                else if (wcscmp(rightChar, L"(") == 0 && wcscmp(rightMostChar, L")") != 0)
                 {
                     shuntingToken operatorToken;
                     operatorToken.token = wcsdup(L".");
@@ -162,7 +170,7 @@ Stack<shuntingToken> getTokens(const wchar_t *&infix)
                 }
 
                 else */
-                if (operatorToken.type == shuntingToken::UNARY_OPERATOR && (isOperand(rightChar) || wcscmp(rightChar, L"(") == 0))
+                if (operatorToken.type == shuntingToken::UNARY_OPERATOR && (isOperand(rightChar) || (wcscmp(rightChar, L"(") == 0 && wcscmp(rightMostChar, L")") != 0)))
                 {
                     shuntingToken concatToken;
                     concatToken.token = wcsdup(L".");
@@ -170,7 +178,7 @@ Stack<shuntingToken> getTokens(const wchar_t *&infix)
                     concatToken.type = getOperatorType(L".");
                     tokens.push(concatToken);
                 }
-                else if (wcscmp(operatorToken.token, L")") == 0 && (isOperand(rightChar) || wcscmp(rightChar, L"(") == 0))
+                else if (wcscmp(operatorToken.token, L")") == 0 && (isOperand(rightChar) || (wcscmp(rightChar, L"(") == 0 && wcscmp(rightMostChar, L")") != 0)))
                 {
                     shuntingToken concatToken;
                     concatToken.token = wcsdup(L".");
