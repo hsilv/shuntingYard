@@ -166,7 +166,7 @@ MyFrame::MyFrame(const wxString &title)
 void MyFrame::OnOpen(wxCommandEvent &event)
 {
     wxFileDialog openFileDialog(this, _("Open file"), "", "",
-                                "Text files (*.txt)|*.txt", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+                                "All files (*.*)|*.*", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
 
     if (openFileDialog.ShowModal() == wxID_CANCEL)
         return; // the user changed idea...
