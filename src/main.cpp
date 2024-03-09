@@ -76,10 +76,11 @@ bool MyApp::OnInit()
         Automata *mcythompson = thompson(tree, alphabet);
         printAutomata(mcythompson);
         generateGraph(mcythompson, L"mcythompson");
-        /*wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos \033[0m----------------------------------------" << endl;
+        wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos \033[0m----------------------------------------" << endl;
         Automata *subset = subsetConstruction(mcythompson);
         printAutomata(subset);
-        generateGraph(subset, L"bysubsets"); */
+        generateGraph(subset, L"bysubsets");
+
         /* wcout << "\n----------------------------------------\033[1;37m Por Construccion directa \033[0m----------------------------------------" << endl;
         size_t pos = alphabet.find(L'ε');
         if (pos != std::wstring::npos)
@@ -90,12 +91,12 @@ bool MyApp::OnInit()
         completeAFD(direct);
         printAutomata(direct);
         generateGraph(direct, L"bydirect"); */
-        /*   wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos (Minificado) \033[0m----------------------------------------" << endl;
-          Automata *subsetCopy = deepCopyAutomata(subset);
-          printAutomata(subsetCopy);
-          Automata *minifiedSubset = minifyAutomata(subsetCopy);
-          printAutomata(minifiedSubset);
-          generateGraph(minifiedSubset, L"bysubsetsminified"); */
+        wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos (Minificado) \033[0m----------------------------------------" << endl;
+        Automata *subsetCopy = deepCopyAutomata(subset);
+        printAutomata(subsetCopy);
+        Automata *minifiedSubset = minifyAutomata(subsetCopy);
+        printAutomata(minifiedSubset);
+        generateGraph(minifiedSubset, L"bysubsetsminified");
         /* wcout << "\n----------------------------------------\033[1;37m Por Construccion directa (Minificado) \033[0m----------------------------------------" << endl;
         Automata *minifiedDirect = minifyAutomata(direct);
         printAutomata(minifiedDirect);
