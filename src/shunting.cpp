@@ -251,9 +251,9 @@ Stack<shuntingToken> shuntingYard(const wchar_t *infix)
     tokens = getTokens(cleanedInfix);
     /*     const wchar_t *cleanedInfix = (wchar_t *)clean((wchar_t *&)infix);
         tokens = getTokens(cleanedInfix); */
-    wcout << "\n\033[1;34m"
+    /* wcout << "\n\033[1;34m"
           << "Shunting Yard Input"
-          << ": \033[0m" << cleanedInfix << endl;
+          << ": \033[0m" << cleanedInfix << endl; */
 
     Stack<shuntingToken> aux;
     Stack<shuntingToken> output;
@@ -386,7 +386,7 @@ Stack<shuntingToken> shuntingYard(const wchar_t *infix)
 
     output.reverse();
 
-    wcout << "\033[1;34m"
+    /* wcout << "\033[1;34m"
           << "Shunting Yard Output"
           << ": \033[0m";
     for (int i = 0; i < output.getSize(); i++)
@@ -395,6 +395,6 @@ Stack<shuntingToken> shuntingYard(const wchar_t *infix)
         wcout << token.token;
     }
 
-    wcout << endl;
+    wcout << endl; */
     return output;
 }

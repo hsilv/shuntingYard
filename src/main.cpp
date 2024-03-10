@@ -32,6 +32,7 @@ public:
 
     // Agrega un manejador de eventos para el elemento de menú "Open"
     void OnOpen(wxCommandEvent &event);
+    void OnKeyDown(wxKeyEvent &event); // Cambi
 
 private:
     wxStyledTextCtrl *textCtrl;
@@ -67,19 +68,19 @@ bool MyApp::OnInit()
         postfix = shuntingYard(wide_cstr);
         postfixAugmented = shuntingYard((wstring(wide_cstr) + L"#").c_str());
         TreeNode *tree = constructSyntaxTree(&postfix);
-        print2D(tree);
+        /* print2D(tree); */
         TreeNode *treeAugmented = constructSyntaxTree(&postfixAugmented);
         TreeNode *augmentedParsedTree = parseTree(treeAugmented);
-        print2D(treeAugmented);
+        /* print2D(treeAugmented); */
         wstring alphabet = getAlphabet(&postfix);
-        wcout << "\n----------------------------------------\033[1;37m Por algoritmo McNaughton-Yamada-Thompson \033[0m----------------------------------------" << endl;
+        /* wcout << "\n----------------------------------------\033[1;37m Por algoritmo McNaughton-Yamada-Thompson \033[0m----------------------------------------" << endl; */
         Automata *mcythompson = thompson(tree, alphabet);
-        printAutomata(mcythompson);
-        generateGraph(mcythompson, L"mcythompson");
-        wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos \033[0m----------------------------------------" << endl;
+        /* printAutomata(mcythompson); */
+        /* generateGraph(mcythompson, L"mcythompson"); */
+        /* wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos \033[0m----------------------------------------" << endl; */
         Automata *subset = subsetConstruction(mcythompson);
-        printAutomata(subset);
-        generateGraph(subset, L"bysubsets");
+        /* printAutomata(subset); */
+        /* generateGraph(subset, L"bysubsets"); */
 
         /* wcout << "\n----------------------------------------\033[1;37m Por Construccion directa \033[0m----------------------------------------" << endl;
         size_t pos = alphabet.find(L'ε');
@@ -91,12 +92,13 @@ bool MyApp::OnInit()
         completeAFD(direct);
         printAutomata(direct);
         generateGraph(direct, L"bydirect"); */
-        wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos (Minificado) \033[0m----------------------------------------" << endl;
+        /*         wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos (Minificado) \033[0m----------------------------------------" << endl;
+         */
         Automata *subsetCopy = deepCopyAutomata(subset);
-        printAutomata(subsetCopy);
+        /* printAutomata(subsetCopy); */
         Automata *minifiedSubset = minifyAutomata(subsetCopy);
-        printAutomata(minifiedSubset);
-        generateGraph(minifiedSubset, L"bysubsetsminified");
+        /* printAutomata(minifiedSubset); */
+        /* generateGraph(minifiedSubset, L"bysubsetsminified"); */
         /* wcout << "\n----------------------------------------\033[1;37m Por Construccion directa (Minificado) \033[0m----------------------------------------" << endl;
         Automata *minifiedDirect = minifyAutomata(direct);
         printAutomata(minifiedDirect);
@@ -136,6 +138,7 @@ MyFrame::MyFrame(const wxString &title)
 {
     // Crea un nuevo editor de texto
     textCtrl = new wxStyledTextCtrl(this, wxID_ANY);
+    textCtrl->Bind(wxEVT_KEY_DOWN, &MyFrame::OnKeyDown, this); // Cambia a este evento
 
     // Habilita la numeración de líneas
     textCtrl->SetMarginType(0, wxSTC_MARGIN_NUMBER);
@@ -181,6 +184,81 @@ void MyFrame::OnOpen(wxCommandEvent &event)
     {
         textCtrl->AppendText("\n");
         textCtrl->AppendText(file.GetNextLine());
+    }
+}
+
+void MyFrame::OnKeyDown(wxKeyEvent &event) // Cambia a este evento
+{
+    int code = event.GetRawKeyCode();
+    bool shiftDown = event.ShiftDown();
+
+    char ch = 0;
+    char close_ch = 0;
+
+    if (code == 123 || code == 91) // Tecla '[' o '{'
+    {
+        if (shiftDown)
+        {
+            ch = '[';
+            close_ch = ']';
+        }
+        else
+        {
+            ch = '{';
+            close_ch = '}';
+        }
+    }
+    else if (code == 125 || code == 93) // Tecla ']' o '}'
+    {
+        if (shiftDown)
+        {
+            ch = ']';
+            close_ch = '[';
+        }
+        else
+        {
+            ch = '}';
+            close_ch = '{';
+        }
+    }
+    else if (code == 40 || code == 41) // Tecla '(' o ')'
+    {
+        if (shiftDown)
+        {
+            ch = '(';
+            close_ch = ')';
+        }
+        else
+        {
+            ch = ')';
+            close_ch = '(';
+        }
+    }
+
+    if (ch != 0 && close_ch != 0)
+    {
+        long selStart = textCtrl->GetSelectionStart();
+        long selEnd = textCtrl->GetSelectionEnd();
+
+        if (selStart != selEnd) // Hay texto seleccionado
+        {
+            wxString selectedText = textCtrl->GetSelectedText();
+            wxString newText = ch + selectedText + close_ch;
+            textCtrl->SetSelection(selStart, selEnd); // Restablece la selección
+            textCtrl->ReplaceSelection(newText);
+            event.Skip(false); // Evita que el evento se procese más
+        }
+        else // No hay texto seleccionado
+        {
+            wxString newText = wxString(ch) + close_ch;
+            textCtrl->AddText(newText);
+            textCtrl->GotoPos(textCtrl->GetCurrentPos() - 1);
+            event.Skip(false); // Evita que el evento se procese más
+        }
+    }
+    else
+    {
+        event.Skip(); // Permite que el evento se procese normalmente
     }
 }
 
