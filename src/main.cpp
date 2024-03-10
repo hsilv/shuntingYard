@@ -231,6 +231,29 @@ void MyFrame::OnYes(wxCommandEvent &event)
     // Convierte wxString a std::wstring
     std::wstring strText(text.wc_str());
 
+    std::wstring cleanedText;
+    bool inComment = false;
+
+    for (auto it = strText.begin(); it != strText.end(); ++it)
+    {
+        if (!inComment && *it == L'(' && *(it + 1) == L'*')
+        {
+            inComment = true;
+            ++it;
+        }
+        else if (inComment && *it == L'*' && *(it + 1) == L')')
+        {
+            inComment = false;
+            ++it;
+        }
+        else if (!inComment)
+        {
+            cleanedText += *it;
+        }
+    }
+
+    strText = cleanedText;
+
     // Reemplaza los saltos de línea por un espacio
     /* std::replace(strText.begin(), strText.end(), L'\n', L' '); */
 
@@ -261,11 +284,14 @@ void MyFrame::OnYes(wxCommandEvent &event)
     regexes.push_back({L"\\^", L"Caret"});
     regexes.push_back({L"\\$", L"Dollar sign"});
     regexes.push_back({L"\\.", L"Dot"});
+    regexes.push_back({L"let", L"Declaration"});
+    regexes.push_back({L"=", L"Assignment"});
+    regexes.push_back({L"rule", L"Rule"});
+    regexes.push_back({L",", L"Comma"});
+    regexes.push_back({L"entrypoint", L"Entrypoint"});
     regexes.push_back({L"[0-9]+", L"Integer"});
     regexes.push_back({L"[0-9]+(\\.[0-9]+)?", L"Decimal"});
     regexes.push_back({L"([a-z]|[A-Z])+([a-z]|[A-Z]|[0-9])*", L"Identifier"});
-    regexes.push_back({L"let", L"Declaration"});
-    regexes.push_back({L"=", L"Assignment"});
 
     for (auto &pattern : regexes)
     {
@@ -315,14 +341,20 @@ void MyFrame::OnYes(wxCommandEvent &event)
 
             wcout << "Processing: " << *it << endl;
 
-            if (!std::iswspace(*it)) // If the character is not a whitespace
+            std::wstring delimiters = L";:()[]{} ,.\n";
+
+            if (delimiters.find(*it) == std::wstring::npos) // If the character is not a delimiter
             {
                 lexema += *it;
-                while (it + 1 != strText.end() && !std::iswspace(*(it + 1)))
+                while (it + 1 != strText.end() && delimiters.find(*(it + 1)) == std::wstring::npos)
                 {
                     lexema += *++it;
                     ++column;
                 }
+            }
+            else if (*it != L' ') // If the character is a delimiter (but not a space)
+            {
+                lexema += *it;
             }
 
             for (auto &pattern : regexes)
@@ -377,7 +409,7 @@ void MyFrame::OnYes(wxCommandEvent &event)
     wcout << L"\n\033[1;37mLexemas aceptados\033[0m" << endl;
     for (auto &lexema : lexemasAceptados)
     {
-        std::wcout << lexema.value << std::endl;
+        std::wcout << lexema.value << L" type: " << lexema.type << std::endl;
     }
 
     wcout << L"\n\033[1;37mErrores léxicos\033[0m" << endl;
