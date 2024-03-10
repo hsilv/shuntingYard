@@ -295,6 +295,8 @@ void MyFrame::OnYes(wxCommandEvent &event)
     regexes.push_back({L"=", L"Assignment"});
     regexes.push_back({L"rule", L"Rule"});
     regexes.push_back({L",", L"Comma"});
+    regexes.push_back({L"\"([a-z]|[A-Z]|[0-9]|\\\\|_|\\*|\\?|\\+|\\.|\\-|\\>|\\<|\\=)+\"", L"String Character"});
+    regexes.push_back({L"\'([a-z]|[A-Z]|[0-9]|\\\\|_|\\*|\\?|\\+|\\.|\\-|\\>|\\<|\\=)+\'", L"Regular Character"});
     regexes.push_back({L"\"", L"Double quote"});
     regexes.push_back({L"\'", L"Quote"});
     regexes.push_back({L"entrypoint", L"Entrypoint"});
@@ -302,8 +304,6 @@ void MyFrame::OnYes(wxCommandEvent &event)
     regexes.push_back({L"[0-9]+(\\.[0-9]+)?", L"Decimal"});
     regexes.push_back({L"([a-z]|[A-Z])+([a-z]|[A-Z]|[0-9])*", L"Identifier"});
     regexes.push_back({L" ", L"Space"});
-    regexes.push_back({L"\"([a-z]|[A-Z]|[0-9]|\\\\|_)+\"", L"String Character"});
-    regexes.push_back({L"\'([a-z]|[A-Z]|[0-9]|\\\\|_)+\'", L"Regular Character"});
     /* regexes.push_back({L"\\[([a-z]|[A-Z]|[0-9]|\\\\)+-([a-z]|[A-Z]|[0-9]|\\\\)+\\]", L"Character set"}); */
 
     try
@@ -340,6 +340,8 @@ void MyFrame::OnYes(wxCommandEvent &event)
         std::wstring::iterator it = strText.begin();
         int line = 1;
         int column = 1;
+        bool inString = false;
+        bool inChar = false;
         while (it != strText.end())
         {
             while (it != strText.end() && std::iswspace(*it))
@@ -364,15 +366,31 @@ void MyFrame::OnYes(wxCommandEvent &event)
 
             wcout << "Processing: " << *it << endl;
 
-            std::wstring delimiters = L"#-+*?/^$.;: ()[]{},.\n";
+            std::wstring delimiters = L"| #-+*?/^$.;:()[]{},.\n";
 
-            if (delimiters.find(*it) == std::wstring::npos) // If the character is not a delimiter or we're in a string/char
+            if (inString || inChar || delimiters.find(*it) == std::wstring::npos) // If the character is not a delimiter or we're in a string/char
             {
                 lexema += *it;
-                while (it + 1 != strText.end() && (delimiters.find(*(it + 1)) == std::wstring::npos))
+                if (*it == L'\"')
+                {
+                    inString = !inString;
+                }
+                else if (*it == L'\'')
+                {
+                    inChar = !inChar;
+                }
+                while (it + 1 != strText.end() && (delimiters.find(*(it + 1)) == std::wstring::npos || inString || inChar))
                 {
                     lexema += *++it;
                     ++column;
+                    if (*it == L'\"')
+                    {
+                        inString = !inString;
+                    }
+                    else if (*it == L'\'')
+                    {
+                        inChar = !inChar;
+                    }
                 }
             }
             else if (*it != L' ') // If the character is a delimiter (but not a space)
@@ -534,7 +552,38 @@ void MyFrame::OnYes(wxCommandEvent &event)
                         std::wstring regexValue;
                         while (wcscmp(lexemasAceptados[i].type, L"Closing parenthesis") != 0)
                         {
-                            regexValue += lexemasAceptados[i].value;
+                            if (wcscmp(lexemasAceptados[i].type, L"Regular Character") == 0)
+                            {
+                                // Remove single quotes from value
+                                std::wstring value = lexemasAceptados[i].value;
+                                value.erase(std::remove(value.begin(), value.end(), '\''), value.end());
+                                regexValue += value;
+                            }
+                            else if (wcscmp(lexemasAceptados[i].type, L"String Character") == 0)
+                            {
+                                // Remove double quotes from value
+                                std::wstring value = lexemasAceptados[i].value;
+                                value.erase(std::remove(value.begin(), value.end(), '\"'), value.end());
+                                regexValue += value;
+                            }
+                            else if (wcscmp(lexemasAceptados[i].type, L"Identifier") == 0)
+                            {
+                                wcout << L"Identifier: " << lexemasAceptados[i].value << endl;
+                                // Find the variable with the same value as the identifier and use its value
+                                for (const Symbol &variable : variables)
+                                {
+                                    if (wcscmp(variable.type, lexemasAceptados[i].value) == 0)
+                                    {
+                                        regexValue += variable.value;
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                regexValue += lexemasAceptados[i].value;
+                            }
+
                             if (i + 1 < lexemasAceptados.size())
                             {
                                 i++;
@@ -648,7 +697,38 @@ void MyFrame::OnYes(wxCommandEvent &event)
                         }
                         while (wcscmp(lexemasAceptados[i].type, L"Closing parenthesis") != 0)
                         {
-                            regexValue += lexemasAceptados[i].value;
+
+                            if (wcscmp(lexemasAceptados[i].type, L"Regular Character") == 0)
+                            {
+                                // Remove single quotes from value
+                                std::wstring value = lexemasAceptados[i].value;
+                                value.erase(std::remove(value.begin(), value.end(), '\''), value.end());
+                                regexValue += value;
+                            }
+                            else if (wcscmp(lexemasAceptados[i].type, L"String Character") == 0)
+                            {
+                                // Remove double quotes from value
+                                std::wstring value = lexemasAceptados[i].value;
+                                value.erase(std::remove(value.begin(), value.end(), '\"'), value.end());
+                                regexValue += value;
+                            }
+                            else if (wcscmp(lexemasAceptados[i].type, L"Identifier") == 0)
+                            {
+                                // Find the variable with the same value as the identifier and use its value
+                                for (const Symbol &variable : variables)
+                                {
+                                    if (wcscmp(variable.type, lexemasAceptados[i].value) == 0)
+                                    {
+                                        regexValue += variable.value;
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                regexValue += lexemasAceptados[i].value;
+                            }
+
                             if (i + 1 < lexemasAceptados.size())
                             {
                                 i++;
