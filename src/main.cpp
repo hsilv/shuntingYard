@@ -3,11 +3,13 @@
 #include <wx/filedlg.h>
 #include <wx/textfile.h>
 #include <wx/notebook.h>
-
+#include "symboltable.h"
 #include "shunting.h"
 #include <chrono>
 #include <iostream>
 #include <thread>
+#include <vector>
+#include <string>
 #include "automata.h"
 #include "tree.h"
 #include "thompson.h"
@@ -16,6 +18,8 @@
 #include "direct.h"
 #include "minification.h"
 #include "simulation.h"
+#include <algorithm>
+#include <cctype>
 
 Stack<shuntingToken> postfix;
 Stack<shuntingToken> postfixAugmented;
@@ -35,6 +39,8 @@ public:
     void OnOpen(wxCommandEvent &event);
     void OnSave(wxCommandEvent &event);
     void OnKeyDown(wxKeyEvent &event);
+    void OnExit(wxCommandEvent &event); // Nuevo método para manejar el evento de "Exit"
+    void OnYes(wxCommandEvent &event);
 
 private:
     wxNotebook *notebook;
@@ -46,9 +52,11 @@ wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
     EVT_MENU(wxID_NEW, MyFrame::OnNew)
         EVT_MENU(wxID_OPEN, MyFrame::OnOpen)
             EVT_MENU(wxID_SAVE, MyFrame::OnSave)
-                wxEND_EVENT_TABLE()
+                EVT_MENU(wxID_EXIT, MyFrame::OnExit)
+                    EVT_MENU(wxID_YES, MyFrame::OnYes)
+                        wxEND_EVENT_TABLE()
 
-                    wxIMPLEMENT_APP(MyApp);
+                            wxIMPLEMENT_APP(MyApp);
 
 wxStyledTextCtrl *MyFrame::CreateEditor()
 {
@@ -64,6 +72,21 @@ wxStyledTextCtrl *MyFrame::CreateEditor()
     textCtrl->SetUseTabs(false);
 
     return textCtrl;
+}
+
+bool evalRegex(wstring regex, wstring input)
+{
+    postfix = shuntingYard(regex.c_str());
+    /* postfixAugmented = shuntingYard((regex + L"#").c_str()); */
+    TreeNode *tree = constructSyntaxTree(&postfix);
+    /* TreeNode *treeAugmented = constructSyntaxTree(&postfixAugmented); */
+    /* TreeNode *augmentedParsedTree = parseTree(treeAugmented); */
+    wstring alphabet = getAlphabet(&postfix);
+    Automata *mcythompson = thompson(tree, alphabet);
+    Automata *subset = subsetConstruction(mcythompson);
+    Automata *subsetCopy = deepCopyAutomata(subset);
+    Automata *minifiedSubset = minifyAutomata(subsetCopy);
+    return simulateNFA(mcythompson, input);
 }
 
 bool MyApp::OnInit()
@@ -174,11 +197,18 @@ MyFrame::MyFrame(const wxString &title)
     fileMenu->Append(wxID_SAVE, "&Save");
     fileMenu->Append(wxID_EXIT, "E&xit");
 
+    // Crea un nuevo menú para Code
+    wxMenu *codeMenu = new wxMenu;
+
+    // Agrega elementos al menú Code
+    codeMenu->Append(wxID_YES, "&Build Lexical Analyzer");
+
     // Crea una nueva barra de menú
     wxMenuBar *menuBar = new wxMenuBar;
 
     // Agrega el menú a la barra de menú
     menuBar->Append(fileMenu, "&File");
+    menuBar->Append(codeMenu, "&Code");
 
     // Asigna la barra de menú a la ventana
     SetMenuBar(menuBar);
@@ -188,6 +218,193 @@ MyFrame::MyFrame(const wxString &title)
 
     // Vincula el evento de guardar al método OnSave
     Bind(wxEVT_MENU, &MyFrame::OnSave, this, wxID_SAVE);
+}
+
+void MyFrame::OnYes(wxCommandEvent &event)
+{
+    // Obtiene el control de texto de la página actual
+    wxStyledTextCtrl *textCtrl = (wxStyledTextCtrl *)notebook->GetCurrentPage();
+
+    // Obtiene todo el texto del control de texto
+    wxString text = textCtrl->GetText();
+
+    // Convierte wxString a std::wstring
+    std::wstring strText(text.wc_str());
+
+    // Reemplaza los saltos de línea por un espacio
+    /* std::replace(strText.begin(), strText.end(), L'\n', L' '); */
+
+    struct Patterns
+    {
+        std::wstring regex;
+        std::wstring type;
+        Automata *automata;
+    };
+
+    std::vector<Symbol> errores;
+    std::vector<Symbol> lexemasAceptados;
+    std::vector<Patterns> regexes; // Tus expresiones regulares
+
+    // Añade tus expresiones regulares a regexes
+    regexes.push_back({L"\\(", L"Opening parenthesis"});
+    regexes.push_back({L"\\)", L"Closing parenthesis"});
+    regexes.push_back({L"\\{", L"Opening curly bracket"});
+    regexes.push_back({L"\\}", L"Closing curly bracket"});
+    regexes.push_back({L"\\[", L"Opening square bracket"});
+    regexes.push_back({L"\\]", L"Closing square bracket"});
+    regexes.push_back({L"\\+", L"Plus sign"});
+    regexes.push_back({L"\\*", L"Asterisk"});
+    regexes.push_back({L"\\?", L"Question mark"});
+    regexes.push_back({L"\\|", L"Vertical bar"});
+    regexes.push_back({L"\\\\", L"Backslash"});
+    regexes.push_back({L"/", L"Slash"});
+    regexes.push_back({L"\\^", L"Caret"});
+    regexes.push_back({L"\\$", L"Dollar sign"});
+    regexes.push_back({L"\\.", L"Dot"});
+    regexes.push_back({L"[0-9]+", L"Integer"});
+    regexes.push_back({L"[0-9]+(\\.[0-9]+)?", L"Decimal"});
+    regexes.push_back({L"([a-z]|[A-Z])+([a-z]|[A-Z]|[0-9])*", L"Identifier"});
+    regexes.push_back({L"let", L"Declaration"});
+    regexes.push_back({L"=", L"Assignment"});
+
+    for (auto &pattern : regexes)
+    {
+        Stack<shuntingToken> postfixRegex = shuntingYard(pattern.regex.c_str());
+        std::wstring alphabet = getAlphabet(&postfixRegex);
+        pattern.automata = thompson(constructSyntaxTree(&postfixRegex), alphabet);
+        /* std::wstring type = pattern.type;
+
+
+        std::transform(type.begin(), type.end(), type.begin(),
+                       [](wchar_t c)
+                       { return std::towlower(c); });
+
+
+        std::replace(type.begin(), type.end(), L' ', L'_');
+        generateGraph(pattern.automata, type); */
+    }
+
+    wcout << "Processing Lexical Analyzer" << endl;
+    try
+    {
+        std::wstring::iterator it = strText.begin();
+        int line = 1;
+        int column = 1;
+        while (it != strText.end())
+        {
+            // Skip whitespace at the beginning of a lexeme
+            while (it != strText.end() && std::iswspace(*it))
+            {
+                if (*it == L'\n')
+                {
+                    ++line;
+                    column = 1;
+                }
+                else
+                {
+                    ++column;
+                }
+                ++it;
+            }
+
+            if (it == strText.end())
+                break;
+
+            std::wstring lexema;
+            bool match = false;
+
+            wcout << "Processing: " << *it << endl;
+
+            if (!std::iswspace(*it)) // If the character is not a whitespace
+            {
+                lexema += *it;
+                while (it + 1 != strText.end() && !std::iswspace(*(it + 1)))
+                {
+                    lexema += *++it;
+                    ++column;
+                }
+            }
+
+            for (auto &pattern : regexes)
+            {
+                /* wcout << "lexema: " << lexema << " pattern: " << pattern.regex << endl; */
+                if (simulateNFA(pattern.automata, lexema))
+                {
+                    match = true;
+
+                    // Create a new Symbol and add it to lexemasAceptados
+                    /* wcout << "Matched: " << lexema << L" with " << pattern.type << endl; */
+                    Symbol symbol;
+                    symbol.type = wcsdup(pattern.type.c_str());
+                    symbol.value = wcsdup(lexema.c_str());
+                    symbol.numberLine = line;
+                    symbol.numberColumn = column - lexema.length() + 1;
+                    lexemasAceptados.push_back(symbol);
+                    break;
+                }
+            }
+
+            if (!match)
+            {
+                // Split lexema into words and add them to errores
+                std::wistringstream iss(lexema);
+                std::wstring word;
+                while (iss >> word)
+                {
+                    Symbol symbol;
+                    symbol.type = L"Error";
+                    symbol.value = wcsdup(word.c_str());
+                    symbol.numberLine = line;
+                    symbol.numberColumn = column - word.length() + 1;
+                    errores.push_back(symbol);
+                }
+            }
+
+            ++it;
+            ++column;
+        }
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Caught exception: " << e.what() << std::endl;
+    }
+    catch (...)
+    {
+        std::cerr << "Caught unknown exception" << std::endl;
+    }
+    wcout << endl;
+
+    wcout << L"\n\033[1;37mLexemas aceptados\033[0m" << endl;
+    for (auto &lexema : lexemasAceptados)
+    {
+        std::wcout << lexema.value << std::endl;
+    }
+
+    wcout << L"\n\033[1;37mErrores léxicos\033[0m" << endl;
+    for (auto &error : errores)
+    {
+        std::wcout << error.value << L" at line: " << error.numberLine << L" at column: " << error.numberColumn << std::endl;
+    }
+}
+
+void MyFrame::OnExit(wxCommandEvent &event)
+{
+    // Si hay más de una página, cierra la página actual
+    if (notebook->GetPageCount() > 1)
+    {
+        notebook->DeletePage(notebook->GetSelection());
+    }
+    // Si solo queda una página, cierra la página y la ventana
+    else if (notebook->GetPageCount() == 1)
+    {
+        notebook->DeletePage(notebook->GetSelection());
+        Close(true);
+    }
+    // Si no hay páginas, cierra la ventana
+    else
+    {
+        Close(true);
+    }
 }
 
 void MyFrame::OnSave(wxCommandEvent &event)

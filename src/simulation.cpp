@@ -36,16 +36,16 @@ bool simulateAutomata(Automata *automata, wstring &input)
                 wstring allButLast = processedInput.substr(0, processedInput.size() - 1);
                 wchar_t lastChar = processedInput.back();
 
-                wcerr << L"\033[1;31m"
+                /* wcerr << L"\033[1;31m"
                       << L"ERROR: \033[0m" << L"Input refused " << allButLast << "\033[1;31m" << lastChar
                       << "<-"
-                      << L"\033[0m" << endl;
+                      << L"\033[0m" << endl; */
             }
             else
             {
-                wcerr << L"\033[1;31m"
+                /* wcerr << L"\033[1;31m"
                       << L"ERROR: \033[0m" << L"Input refused <-"
-                      << L"\033[0m" << endl;
+                      << L"\033[0m" << endl; */
             }
             return false;
         }
@@ -55,7 +55,7 @@ bool simulateAutomata(Automata *automata, wstring &input)
     if (currentState->isAcceptable)
     {
         /* wcout << L"Final state: " << currentState->name << endl; */
-        wcout << L"\033[1;32mInput: " << processedInput << L" accepted\033[0m" << endl;
+        /* wcout << L"\033[1;32mInput: " << processedInput << L" accepted\033[0m" << endl; */
         return true;
     }
     else
@@ -66,16 +66,16 @@ bool simulateAutomata(Automata *automata, wstring &input)
             wstring allButLast = processedInput.substr(0, processedInput.size() - 1);
             wchar_t lastChar = processedInput.back();
 
-            wcerr << L"\033[1;31m"
-                  << L"ERROR: \033[0m" << L"Input refused " << allButLast << "\033[1;31m" << lastChar
-                  << "<-"
-                  << L"\033[0m" << endl;
+            /*  wcerr << L"\033[1;31m"
+                   << L"ERROR: \033[0m" << L"Input refused " << allButLast << "\033[1;31m" << lastChar
+                   << "<-"
+                   << L"\033[0m" << endl; */
         }
         else
         {
-            wcerr << L"\033[1;31m"
+            /* wcerr << L"\033[1;31m"
                   << L"ERROR: \033[0m" << L"Input refused <-"
-                  << L"\033[0m" << endl;
+                  << L"\033[0m" << endl; */
         }
         return false;
     }
@@ -168,7 +168,7 @@ bool simulateNFA(Automata *automata, wstring &input)
         processedInput += symbol; // Agrega el símbolo procesado a la entrada procesada
         if (currentStates.empty())
         {
-            printError(processedInput);
+            /* printError(processedInput); */
             return false;
         }
     }
@@ -178,11 +178,11 @@ bool simulateNFA(Automata *automata, wstring &input)
     {
         if (state->isAcceptable)
         {
-            wcout << L"\033[1;32mInput: " << processedInput << L" accepted\033[0m" << endl;
+            /* wcout << L"\033[1;32mInput: " << processedInput << L" accepted\033[0m" << endl; */
             return true;
         }
     }
 
-    printError(processedInput);
+    /* printError(processedInput); */
     return false;
 }

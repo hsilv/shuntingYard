@@ -247,7 +247,8 @@ Stack<shuntingToken> shuntingYard(const wchar_t *infix)
 {
     Stack<shuntingToken> tokens;
     wstring expandedInfix = expandRanges(infix);
-    const wchar_t *cleanedInfix = (wchar_t *)clean((wchar_t *&)expandedInfix);
+    /* const wchar_t *cleanedInfix = (wchar_t *)clean((wchar_t *&)expandedInfix); */
+    const wchar_t *cleanedInfix = (wchar_t *)expandedInfix.c_str();
     tokens = getTokens(cleanedInfix);
     /*     const wchar_t *cleanedInfix = (wchar_t *)clean((wchar_t *&)infix);
         tokens = getTokens(cleanedInfix); */
