@@ -2,6 +2,7 @@
 #include <wx/stc/stc.h>
 #include <wx/filedlg.h>
 #include <wx/textfile.h>
+#include <wx/notebook.h>
 
 #include "shunting.h"
 #include <chrono>
@@ -29,22 +30,41 @@ class MyFrame : public wxFrame
 {
 public:
     MyFrame(const wxString &title);
-
-    // Agrega un manejador de eventos para el elemento de menú "Open"
+    wxStyledTextCtrl *CreateEditor();
+    void OnNew(wxCommandEvent &event);
     void OnOpen(wxCommandEvent &event);
-    void OnKeyDown(wxKeyEvent &event); // Cambi
+    void OnSave(wxCommandEvent &event);
+    void OnKeyDown(wxKeyEvent &event);
 
 private:
-    wxStyledTextCtrl *textCtrl;
+    wxNotebook *notebook;
 
     wxDECLARE_EVENT_TABLE();
 };
 
 wxBEGIN_EVENT_TABLE(MyFrame, wxFrame)
-    EVT_MENU(wxID_OPEN, MyFrame::OnOpen)
-        wxEND_EVENT_TABLE()
+    EVT_MENU(wxID_NEW, MyFrame::OnNew)
+        EVT_MENU(wxID_OPEN, MyFrame::OnOpen)
+            EVT_MENU(wxID_SAVE, MyFrame::OnSave)
+                wxEND_EVENT_TABLE()
 
-            wxIMPLEMENT_APP(MyApp);
+                    wxIMPLEMENT_APP(MyApp);
+
+wxStyledTextCtrl *MyFrame::CreateEditor()
+{
+    wxStyledTextCtrl *textCtrl = new wxStyledTextCtrl(notebook, wxID_ANY);
+    textCtrl->Bind(wxEVT_KEY_DOWN, &MyFrame::OnKeyDown, this); // Cambia a este evento
+
+    // Habilita la numeración de líneas
+    textCtrl->SetMarginType(0, wxSTC_MARGIN_NUMBER);
+    textCtrl->SetMarginWidth(0, textCtrl->TextWidth(wxSTC_STYLE_LINENUMBER, "_99999"));
+
+    // Habilita las tabulaciones
+    textCtrl->SetTabWidth(4);
+    textCtrl->SetUseTabs(false);
+
+    return textCtrl;
+}
 
 bool MyApp::OnInit()
 {
@@ -136,17 +156,14 @@ bool MyApp::OnInit()
 MyFrame::MyFrame(const wxString &title)
     : wxFrame(NULL, wxID_ANY, title)
 {
+    // Crea un nuevo notebook
+    notebook = new wxNotebook(this, wxID_ANY);
+
     // Crea un nuevo editor de texto
-    textCtrl = new wxStyledTextCtrl(this, wxID_ANY);
-    textCtrl->Bind(wxEVT_KEY_DOWN, &MyFrame::OnKeyDown, this); // Cambia a este evento
+    wxStyledTextCtrl *textCtrl = CreateEditor();
 
-    // Habilita la numeración de líneas
-    textCtrl->SetMarginType(0, wxSTC_MARGIN_NUMBER);
-    textCtrl->SetMarginWidth(0, textCtrl->TextWidth(wxSTC_STYLE_LINENUMBER, "_99999"));
-
-    // Habilita las tabulaciones
-    textCtrl->SetTabWidth(4);
-    textCtrl->SetUseTabs(false);
+    // Agrega el editor de texto como una nueva pestaña en el notebook
+    notebook->AddPage(textCtrl, "New Document", true);
 
     // Crea un nuevo menú
     wxMenu *fileMenu = new wxMenu;
@@ -165,6 +182,46 @@ MyFrame::MyFrame(const wxString &title)
 
     // Asigna la barra de menú a la ventana
     SetMenuBar(menuBar);
+
+    // Establece el tamaño inicial de la ventana
+    SetSize(wxSize(800, 600));
+
+    // Vincula el evento de guardar al método OnSave
+    Bind(wxEVT_MENU, &MyFrame::OnSave, this, wxID_SAVE);
+}
+
+void MyFrame::OnSave(wxCommandEvent &event)
+{
+    wxStyledTextCtrl *textCtrl = (wxStyledTextCtrl *)notebook->GetCurrentPage();
+    wxString filename = notebook->GetPageText(notebook->GetSelection());
+
+    if (filename == "New Document")
+    {
+        wxFileDialog saveFileDialog(this, _("Save file"), "", "",
+                                    "All files (*.*)|*.*", wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+        if (saveFileDialog.ShowModal() == wxID_CANCEL)
+            return; // the user changed idea...
+
+        filename = saveFileDialog.GetPath();
+        notebook->SetPageText(notebook->GetSelection(), saveFileDialog.GetFilename());
+    }
+
+    wxTextFile file(filename);
+    if (file.Exists())
+        file.Clear();
+
+    file.Create();
+    wxString text = textCtrl->GetText();
+    file.AddLine(text);
+    file.Write();
+    file.Close();
+}
+
+void MyFrame::OnNew(wxCommandEvent &event)
+{
+    wxStyledTextCtrl *textCtrl = CreateEditor();
+    notebook->AddPage(textCtrl, "New Document", true);
 }
 
 void MyFrame::OnOpen(wxCommandEvent &event)
@@ -176,6 +233,20 @@ void MyFrame::OnOpen(wxCommandEvent &event)
         return; // the user changed idea...
 
     // proceed loading the file chosen by the user;
+    wxStyledTextCtrl *textCtrl = (wxStyledTextCtrl *)notebook->GetCurrentPage();
+    if (textCtrl->GetText().IsEmpty())
+    {
+        // If current page is empty, overwrite it
+        textCtrl->ClearAll();
+        notebook->SetPageText(notebook->GetSelection(), openFileDialog.GetFilename());
+    }
+    else
+    {
+        // If current page is not empty, create a new page
+        textCtrl = CreateEditor();
+        notebook->AddPage(textCtrl, openFileDialog.GetFilename(), true);
+    }
+
     wxTextFile file;
     file.Open(openFileDialog.GetPath());
     textCtrl->SetText(file.GetFirstLine());
@@ -195,7 +266,7 @@ void MyFrame::OnKeyDown(wxKeyEvent &event) // Cambia a este evento
     char ch = 0;
     char close_ch = 0;
 
-    if (code == 123 || code == 91) // Tecla '[' o '{'
+    if (code == 123 || code == 91)
     {
         if (shiftDown)
         {
@@ -208,7 +279,7 @@ void MyFrame::OnKeyDown(wxKeyEvent &event) // Cambia a este evento
             close_ch = '}';
         }
     }
-    else if (code == 125 || code == 93) // Tecla ']' o '}'
+    else if (code == 125 || code == 93)
     {
         if (shiftDown)
         {
@@ -221,7 +292,7 @@ void MyFrame::OnKeyDown(wxKeyEvent &event) // Cambia a este evento
             close_ch = '{';
         }
     }
-    else if (code == 40 || code == 41) // Tecla '(' o ')'
+    else if (code == 40 || code == 41)
     {
         if (shiftDown)
         {
@@ -237,6 +308,7 @@ void MyFrame::OnKeyDown(wxKeyEvent &event) // Cambia a este evento
 
     if (ch != 0 && close_ch != 0)
     {
+        wxStyledTextCtrl *textCtrl = (wxStyledTextCtrl *)notebook->GetCurrentPage();
         long selStart = textCtrl->GetSelectionStart();
         long selEnd = textCtrl->GetSelectionEnd();
 

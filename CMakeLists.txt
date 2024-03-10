@@ -4,7 +4,7 @@ project(CPP_COURSE)
 set(CMAKE_CXX_STANDARD 17)
 
 # Encuentra el paquete wxWidgets
-find_package(wxWidgets REQUIRED core base stc)
+find_package(wxWidgets REQUIRED core base stc aui)
 
 # Incluye los directorios de wxWidgets
 include(${wxWidgets_USE_FILE})
