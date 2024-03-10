@@ -91,78 +91,78 @@ bool evalRegex(wstring regex, wstring input)
 
 bool MyApp::OnInit()
 {
-    if (argc != 3)
+    /* if (argc != 3)
     {
         cerr << "\033[1;31m"
              << "ERROR: Debe ingresar una expresión regular y una cadena a validar"
              << "\033[0m" << endl;
         return 1;
-    }
+    } */
     // Inicio de la ejecución e inicio de medidor de reloj
-    locale::global(locale("en_US.UTF-8"));
+    /* locale::global(locale("en_US.UTF-8"));
     wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
     wstring wide = converter.from_bytes(argv[1]);
     wstring expresion = converter.from_bytes(argv[2]);
-    const wchar_t *wide_cstr = wide.c_str();
+    const wchar_t *wide_cstr = wide.c_str(); */
     auto start = chrono::high_resolution_clock::now();
 
-    try
-    {
-        postfix = shuntingYard(wide_cstr);
-        postfixAugmented = shuntingYard((wstring(wide_cstr) + L"#").c_str());
-        TreeNode *tree = constructSyntaxTree(&postfix);
-        /* print2D(tree); */
-        TreeNode *treeAugmented = constructSyntaxTree(&postfixAugmented);
-        TreeNode *augmentedParsedTree = parseTree(treeAugmented);
-        /* print2D(treeAugmented); */
-        wstring alphabet = getAlphabet(&postfix);
-        /* wcout << "\n----------------------------------------\033[1;37m Por algoritmo McNaughton-Yamada-Thompson \033[0m----------------------------------------" << endl; */
-        Automata *mcythompson = thompson(tree, alphabet);
-        /* printAutomata(mcythompson); */
-        /* generateGraph(mcythompson, L"mcythompson"); */
-        /* wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos \033[0m----------------------------------------" << endl; */
-        Automata *subset = subsetConstruction(mcythompson);
-        /* printAutomata(subset); */
-        /* generateGraph(subset, L"bysubsets"); */
+    /*  try
+     {
+         postfix = shuntingYard(wide_cstr);
+         postfixAugmented = shuntingYard((wstring(wide_cstr) + L"#").c_str());
+         TreeNode *tree = constructSyntaxTree(&postfix);
+         print2D(tree);
+         TreeNode *treeAugmented = constructSyntaxTree(&postfixAugmented);
+         TreeNode *augmentedParsedTree = parseTree(treeAugmented);
+         print2D(treeAugmented);
+         wstring alphabet = getAlphabet(&postfix);
+         wcout << "\n----------------------------------------\033[1;37m Por algoritmo McNaughton-Yamada-Thompson \033[0m----------------------------------------" << endl;
+         Automata *mcythompson = thompson(tree, alphabet);
+         printAutomata(mcythompson);
+         generateGraph(mcythompson, L"mcythompson");
+         wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos \033[0m----------------------------------------" << endl;
+         Automata *subset = subsetConstruction(mcythompson);
+         printAutomata(subset);
+         generateGraph(subset, L"bysubsets");
 
-        /* wcout << "\n----------------------------------------\033[1;37m Por Construccion directa \033[0m----------------------------------------" << endl;
-        size_t pos = alphabet.find(L'ε');
-        if (pos != std::wstring::npos)
-        {
-            alphabet.erase(pos, 1);
-        }
-        Automata *direct = directConstruction(augmentedParsedTree, alphabet);
-        completeAFD(direct);
-        printAutomata(direct);
-        generateGraph(direct, L"bydirect"); */
-        /*         wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos (Minificado) \033[0m----------------------------------------" << endl;
-         */
-        Automata *subsetCopy = deepCopyAutomata(subset);
-        /* printAutomata(subsetCopy); */
-        Automata *minifiedSubset = minifyAutomata(subsetCopy);
-        /* printAutomata(minifiedSubset); */
-        /* generateGraph(minifiedSubset, L"bysubsetsminified"); */
-        /* wcout << "\n----------------------------------------\033[1;37m Por Construccion directa (Minificado) \033[0m----------------------------------------" << endl;
-        Automata *minifiedDirect = minifyAutomata(direct);
-        printAutomata(minifiedDirect);
-        generateGraph(minifiedDirect, L"bydirectminified"); */
+         wcout << "\n----------------------------------------\033[1;37m Por Construccion directa \033[0m----------------------------------------" << endl;
+         size_t pos = alphabet.find(L'ε');
+         if (pos != std::wstring::npos)
+         {
+             alphabet.erase(pos, 1);
+         }
+         Automata *direct = directConstruction(augmentedParsedTree, alphabet);
+         completeAFD(direct);
+         printAutomata(direct);
+         generateGraph(direct, L"bydirect");
+         wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos (Minificado) \033[0m----------------------------------------" << endl;
 
-        wcout << L"\n\033[1;37mSimulacion de AFD por subconjuntos\033[0m" << endl;
-        simulateAutomata(subset, expresion);
-        /* wcout << L"\n\033[1;37mSimulacion de AFD por construccion directa\033[0m" << endl;
-        simulateAutomata(direct, expresion); */
-        wcout << L"\n\033[1;37mSimulacion de AFD por subconjuntos (minificado)\033[0m" << endl;
-        simulateAutomata(minifiedSubset, expresion);
-        /* wcout << L"\n\033[1;37mSimulacion de AFD por construccion directa (minificado)\033[0m" << endl;
-        simulateAutomata(minifiedDirect, expresion); */
-        wcout << L"\n\033[1;37mSimulacion de AFN por McNaughton-Yamada-Thompson\033[0m" << endl;
-        simulateNFA(mcythompson, expresion);
-    }
-    catch (const exception &e)
-    {
-        cerr << "\033[1;31m"
-             << "ERROR: " << e.what() << "\033[0m" << endl;
-    }
+         Automata *subsetCopy = deepCopyAutomata(subset);
+         printAutomata(subsetCopy);
+         Automata *minifiedSubset = minifyAutomata(subsetCopy);
+         printAutomata(minifiedSubset);
+         generateGraph(minifiedSubset, L"bysubsetsminified");
+         wcout << "\n----------------------------------------\033[1;37m Por Construccion directa (Minificado) \033[0m----------------------------------------" << endl;
+         Automata *minifiedDirect = minifyAutomata(direct);
+         printAutomata(minifiedDirect);
+         generateGraph(minifiedDirect, L"bydirectminified");
+
+         wcout << L"\n\033[1;37mSimulacion de AFD por subconjuntos\033[0m" << endl;
+         simulateAutomata(subset, expresion);
+         wcout << L"\n\033[1;37mSimulacion de AFD por construccion directa\033[0m" << endl;
+         simulateAutomata(direct, expresion);
+         wcout << L"\n\033[1;37mSimulacion de AFD por subconjuntos (minificado)\033[0m" << endl;
+         simulateAutomata(minifiedSubset, expresion);
+         wcout << L"\n\033[1;37mSimulacion de AFD por construccion directa (minificado)\033[0m" << endl;
+         simulateAutomata(minifiedDirect, expresion);
+         wcout << L"\n\033[1;37mSimulacion de AFN por McNaughton-Yamada-Thompson\033[0m" << endl;
+         simulateNFA(mcythompson, expresion);
+     }
+     catch (const exception &e)
+     {
+         cerr << "\033[1;31m"
+              << "ERROR: " << e.what() << "\033[0m" << endl;
+     } */
 
     // Fin de la ejecución e impresión de tiempo transcurrido
     auto end = chrono::high_resolution_clock::now();
@@ -269,6 +269,7 @@ void MyFrame::OnYes(wxCommandEvent &event)
     std::vector<Patterns> regexes; // Tus expresiones regulares
 
     // Añade tus expresiones regulares a regexes
+    /* regexes.push_back({L"([a-z]|[A-Z]|[0-9])+-([a-z]|[A-Z]|[0-9])", L"Range"}); */
     regexes.push_back({L"\\(", L"Opening parenthesis"});
     regexes.push_back({L"\\)", L"Closing parenthesis"});
     regexes.push_back({L"\\{", L"Opening curly bracket"});
@@ -276,38 +277,61 @@ void MyFrame::OnYes(wxCommandEvent &event)
     regexes.push_back({L"\\[", L"Opening square bracket"});
     regexes.push_back({L"\\]", L"Closing square bracket"});
     regexes.push_back({L"\\+", L"Plus sign"});
+    regexes.push_back({L"\\-", L"Minus sign"});
     regexes.push_back({L"\\*", L"Asterisk"});
     regexes.push_back({L"\\?", L"Question mark"});
+    regexes.push_back({L"\\;", L"Semicolon"});
     regexes.push_back({L"\\|", L"Vertical bar"});
     regexes.push_back({L"\\\\", L"Backslash"});
     regexes.push_back({L"/", L"Slash"});
     regexes.push_back({L"\\^", L"Caret"});
     regexes.push_back({L"\\$", L"Dollar sign"});
+    regexes.push_back({L"#include", L"Include Statement"});
+    regexes.push_back({L"\\#", L"Sharp"});
     regexes.push_back({L"\\.", L"Dot"});
     regexes.push_back({L"let", L"Declaration"});
+    regexes.push_back({L"eof", L"End of file"});
+    regexes.push_back({L"return", L"Return Statement"});
     regexes.push_back({L"=", L"Assignment"});
     regexes.push_back({L"rule", L"Rule"});
     regexes.push_back({L",", L"Comma"});
+    regexes.push_back({L"\"", L"Double quote"});
+    regexes.push_back({L"\'", L"Quote"});
     regexes.push_back({L"entrypoint", L"Entrypoint"});
     regexes.push_back({L"[0-9]+", L"Integer"});
     regexes.push_back({L"[0-9]+(\\.[0-9]+)?", L"Decimal"});
     regexes.push_back({L"([a-z]|[A-Z])+([a-z]|[A-Z]|[0-9])*", L"Identifier"});
+    regexes.push_back({L" ", L"Space"});
+    regexes.push_back({L"\"([a-z]|[A-Z]|[0-9]|\\\\|_)+\"", L"String Character"});
+    regexes.push_back({L"\'([a-z]|[A-Z]|[0-9]|\\\\|_)+\'", L"Regular Character"});
+    /* regexes.push_back({L"\\[([a-z]|[A-Z]|[0-9]|\\\\)+-([a-z]|[A-Z]|[0-9]|\\\\)+\\]", L"Character set"}); */
 
-    for (auto &pattern : regexes)
+    try
     {
-        Stack<shuntingToken> postfixRegex = shuntingYard(pattern.regex.c_str());
-        std::wstring alphabet = getAlphabet(&postfixRegex);
-        pattern.automata = thompson(constructSyntaxTree(&postfixRegex), alphabet);
-        /* std::wstring type = pattern.type;
+        for (auto &pattern : regexes)
+        {
+            Stack<shuntingToken> postfixRegex = shuntingYard(pattern.regex.c_str());
+            std::wstring alphabet = getAlphabet(&postfixRegex);
+            pattern.automata = thompson(constructSyntaxTree(&postfixRegex), alphabet);
+            /* std::wstring type = pattern.type;
 
 
-        std::transform(type.begin(), type.end(), type.begin(),
-                       [](wchar_t c)
-                       { return std::towlower(c); });
+            std::transform(type.begin(), type.end(), type.begin(),
+                           [](wchar_t c)
+                           { return std::towlower(c); });
 
 
-        std::replace(type.begin(), type.end(), L' ', L'_');
-        generateGraph(pattern.automata, type); */
+            std::replace(type.begin(), type.end(), L' ', L'_');
+            generateGraph(pattern.automata, type); */
+        }
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Caught exception: " << e.what() << '\n';
+    }
+    catch (...)
+    {
+        std::cerr << "Caught unknown exception\n";
     }
 
     wcout << "Processing Lexical Analyzer" << endl;
@@ -318,7 +342,6 @@ void MyFrame::OnYes(wxCommandEvent &event)
         int column = 1;
         while (it != strText.end())
         {
-            // Skip whitespace at the beginning of a lexeme
             while (it != strText.end() && std::iswspace(*it))
             {
                 if (*it == L'\n')
@@ -341,12 +364,12 @@ void MyFrame::OnYes(wxCommandEvent &event)
 
             wcout << "Processing: " << *it << endl;
 
-            std::wstring delimiters = L";:()[]{} ,.\n";
+            std::wstring delimiters = L"#-+*?/^$.;: ()[]{},.\n";
 
-            if (delimiters.find(*it) == std::wstring::npos) // If the character is not a delimiter
+            if (delimiters.find(*it) == std::wstring::npos) // If the character is not a delimiter or we're in a string/char
             {
                 lexema += *it;
-                while (it + 1 != strText.end() && delimiters.find(*(it + 1)) == std::wstring::npos)
+                while (it + 1 != strText.end() && (delimiters.find(*(it + 1)) == std::wstring::npos))
                 {
                     lexema += *++it;
                     ++column;
@@ -409,6 +432,15 @@ void MyFrame::OnYes(wxCommandEvent &event)
     wcout << L"\n\033[1;37mLexemas aceptados\033[0m" << endl;
     for (auto &lexema : lexemasAceptados)
     {
+        if (lexema.type != L"String Character" || lexema.type == L"Regular Character")
+        {
+            std::wstring value = lexema.value;
+            std::replace(value.begin(), value.end(), L'_', L' ');
+            delete[] lexema.value;
+            lexema.value = new wchar_t[value.size() + 1];
+            std::copy(value.begin(), value.end(), lexema.value);
+            lexema.value[value.size()] = L'\0';
+        }
         std::wcout << lexema.value << L" type: " << lexema.type << std::endl;
     }
 
@@ -416,6 +448,87 @@ void MyFrame::OnYes(wxCommandEvent &event)
     for (auto &error : errores)
     {
         std::wcout << error.value << L" at line: " << error.numberLine << L" at column: " << error.numberColumn << std::endl;
+    }
+    wcout << endl;
+
+    std::vector<Symbol> lexicalAnalyzer;
+    std::vector<Symbol> variables;
+    std::vector<Symbol> lexErrors;
+    // Build the lexical analyzer
+    for (int i = 0; i < lexemasAceptados.size(); i++)
+    {
+        Symbol symbol = lexemasAceptados[i];
+
+        if (i == 0 && wcscmp(symbol.type, L"Opening curly bracket") == 0)
+        {
+            i++;
+            bool closedFounded = false;
+            while (i < lexemasAceptados.size())
+            {
+                if (wcscmp(lexemasAceptados[i].type, L"Closing curly bracket") == 0)
+                {
+                    closedFounded = true;
+                    break;
+                }
+                lexemasAceptados[i].type = L"Header Statement";
+                lexicalAnalyzer.push_back(lexemasAceptados[i]);
+                i++;
+            }
+        }
+        else if (wcscmp(symbol.type, L"Declaration") == 0)
+        {
+            wcout << L"Declaration found" << endl;
+            i++;
+            if (wcscmp(lexemasAceptados[i].type, L"Identifier") == 0)
+            {
+                wcout << L"Identifier found" << endl;
+                Symbol variable;
+                variable.type = lexemasAceptados[i].value; // Set the type to the identifier's value
+                i++;
+                if (wcscmp(lexemasAceptados[i].type, L"Assignment") == 0)
+                {
+                    wcout << L"Assignment found" << endl;
+                    i++;
+                    if (wcscmp(lexemasAceptados[i].type, L"Opening parenthesis") == 0)
+                    {
+                        wcout << L"Open Parenthesis found" << endl;
+                        i++;
+                        std::wstring regexValue;
+                        while (wcscmp(lexemasAceptados[i].type, L"Closing parenthesis") != 0)
+                        {
+                            regexValue += lexemasAceptados[i].value;
+                            i++;
+                        }
+                        variable.value = new wchar_t[regexValue.size() + 1];
+                        std::copy(regexValue.begin(), regexValue.end(), variable.value);
+                        variable.value[regexValue.size()] = L'\0';
+                        variables.push_back(variable);
+                    }
+                    else
+                    {
+                        lexErrors.push_back(lexemasAceptados[i]);
+                    }
+                }
+                else
+                {
+                    lexErrors.push_back(lexemasAceptados[i]);
+                }
+            }
+            else
+            {
+                lexErrors.push_back(lexemasAceptados[i]);
+            }
+        }
+    }
+
+    for (auto &symbol : lexicalAnalyzer)
+    {
+        std::wcout << symbol.value << L" type: " << symbol.type << std::endl;
+    }
+
+    for (auto &variable : variables)
+    {
+        std::wcout << variable.value << L" type: " << variable.type << std::endl;
     }
 }
 

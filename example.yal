@@ -1,0 +1,8 @@
+(* ejemplo.yal Este generará una clase de caracteres para operaciones aritméticas *)
+ {
+ #include "arythmeticTokens"
+ }
+ rule  getArythmeticTokens [string] =
+
+
+
