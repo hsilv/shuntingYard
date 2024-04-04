@@ -1,5 +1,6 @@
 #include "simulation.h"
 #include <set>
+#include <omp.h>
 
 bool simulateAutomata(Automata *automata, wstring &input)
 {
@@ -101,7 +102,7 @@ void printError(wstring &processedInput)
     }
 }
 
-bool simulateNFA(Automata *automata, wstring &input)
+wstring simulateNFA(Automata *automata, wstring &input)
 {
     set<AutomataState *> currentStates;
     currentStates.insert(automata->start);
@@ -114,11 +115,14 @@ bool simulateNFA(Automata *automata, wstring &input)
     {
         epsilonTransitionExists = false;
         set<AutomataState *> newStates;
-        for (AutomataState *state : currentStates)
+
+#pragma omp parallel for
+        for (int i = 0; i < automata->transitions.size(); ++i)
         {
-            for (AutomataTransition *t : automata->transitions)
+            AutomataTransition *t = automata->transitions[i];
+            if (currentStates.find(t->from) != currentStates.end() && *t->input == L'ε' && visitedStates.find(t->to) == visitedStates.end())
             {
-                if (wstring(t->from->name) == wstring(state->name) && *t->input == L'ε' && visitedStates.find(t->to) == visitedStates.end())
+#pragma omp critical
                 {
                     newStates.insert(t->to);
                     epsilonTransitionExists = true;
@@ -129,14 +133,19 @@ bool simulateNFA(Automata *automata, wstring &input)
         currentStates.insert(newStates.begin(), newStates.end());
     } while (epsilonTransitionExists);
 
-    for (wchar_t symbol : input)
+#pragma omp parallel for
+    for (int i = 0; i < input.size(); ++i)
     {
+        wchar_t symbol = input[i];
         set<AutomataState *> newStates;
-        for (AutomataState *state : currentStates)
+
+#pragma omp parallel for
+        for (int j = 0; j < automata->transitions.size(); ++j)
         {
-            for (AutomataTransition *t : automata->transitions)
+            AutomataTransition *t = automata->transitions[j];
+            if (currentStates.find(t->from) != currentStates.end() && *t->input == symbol)
             {
-                if (wstring(t->from->name) == wstring(state->name) && *t->input == symbol)
+#pragma omp critical
                 {
                     newStates.insert(t->to);
                 }
@@ -150,11 +159,14 @@ bool simulateNFA(Automata *automata, wstring &input)
         {
             epsilonTransitionExists = false;
             set<AutomataState *> newStates;
-            for (AutomataState *state : currentStates)
+
+#pragma omp parallel for
+            for (int k = 0; k < automata->transitions.size(); ++k)
             {
-                for (AutomataTransition *t : automata->transitions)
+                AutomataTransition *t = automata->transitions[k];
+                if (currentStates.find(t->from) != currentStates.end() && *t->input == L'ε' && visitedStates.find(t->to) == visitedStates.end())
                 {
-                    if (wstring(t->from->name) == wstring(state->name) && *t->input == L'ε' && visitedStates.find(t->to) == visitedStates.end())
+#pragma omp critical
                     {
                         newStates.insert(t->to);
                         epsilonTransitionExists = true;
@@ -169,20 +181,80 @@ bool simulateNFA(Automata *automata, wstring &input)
         if (currentStates.empty())
         {
             /* printError(processedInput); */
-            return false;
+            return L"";
         }
     }
 
-    // Verifica si alguno de los estados actuales es aceptable
+// Verifica si alguno de los estados actuales es aceptable
+#pragma omp parallel for
     for (AutomataState *state : currentStates)
     {
         if (state->isAcceptable)
         {
             /* wcout << L"\033[1;32mInput: " << processedInput << L" accepted\033[0m" << endl; */
-            return true;
+            return state->returnType;
         }
     }
 
     /* printError(processedInput); */
-    return false;
+    return L"";
+}
+
+Automata *joinAutomatas(vector<Automata *> automatas)
+{
+    Automata *newAutomata = new Automata();
+    wstring alphabet = L"";
+    newAutomata->alphabet = alphabet;
+    AutomataState *newStart = new AutomataState();
+    newStart->name = L"START";
+    newStart->isAcceptable = false;
+    newAutomata->start = newStart;
+
+    // Ahora el nuevo estado inicial apunta a los estados iniciales de los autómatas originales con transición epsilon
+    for (Automata *automata : automatas)
+    {
+        AutomataTransition *newTransition = new AutomataTransition();
+        newTransition->from = newStart;
+        newTransition->to = automata->start;
+        newTransition->input = L"ε";
+        newAutomata->transitions.push_back(newTransition);
+    }
+
+    // Incluir todos los caracteres de los alfabetos de cada autómata al nuevo alfabeto, sin repetir caracteres
+    for (Automata *automata : automatas)
+    {
+        for (wchar_t symbol : automata->alphabet)
+        {
+            if (alphabet.find(symbol) == wstring::npos)
+            {
+                alphabet += symbol;
+            }
+        }
+    }
+
+    // Copiar todas las transiciones de los autómatas originales al nuevo autómata
+    for (Automata *automata : automatas)
+    {
+        for (AutomataTransition *transition : automata->transitions)
+        {
+            AutomataTransition *newTransition = new AutomataTransition();
+            newTransition->from = transition->from;
+            newTransition->to = transition->to;
+            newTransition->input = transition->input;
+            newAutomata->transitions.push_back(newTransition);
+        }
+    }
+
+    // Copiar todos los estados finales de los autómatas originales al nuevo autómata
+    for (Automata *automata : automatas)
+    {
+        for (AutomataState *state : automata->finalStates)
+        {
+            wcout << L"Final state: " << state->name << endl;
+            state->isAcceptable = true;
+            newAutomata->finalStates.push_back(state);
+        }
+    }
+
+    return newAutomata;
 }

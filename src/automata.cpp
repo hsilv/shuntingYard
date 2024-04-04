@@ -39,6 +39,10 @@ void printAutomata(Automata *automata)
                   << "\033[1;37m" << automata->transitions[i]->to->name << "\033[0m" << endl;
         }
         wcout << "\n\033[1;36mAlphabet: \033[0m" << automata->alphabet << endl;
+        for (int i = 0; i < automata->finalStates.size(); i++)
+        {
+            wcout << "\n\033[1;36mReturn type: \033[0m" << automata->finalStates[i]->returnType << endl;
+        }
     }
 }
 
@@ -134,4 +138,13 @@ Automata *deepCopyAutomata(const Automata *original)
     newAutomata->alphabet = original->alphabet;
 
     return newAutomata;
+}
+
+Automata *addReturnType(Automata *automata, wstring returnType)
+{
+    for (int i = 0; i < automata->finalStates.size(); i++)
+    {
+        automata->finalStates[i]->returnType = returnType;
+    }
+    return automata;
 }

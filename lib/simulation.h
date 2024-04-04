@@ -4,6 +4,6 @@
 #include "automata.h"
 
 bool simulateAutomata(Automata *automata, wstring &input);
-bool simulateNFA(Automata *automata, wstring &input);
+wstring simulateNFA(Automata *automata, wstring &input);
 
 #endif

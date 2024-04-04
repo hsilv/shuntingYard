@@ -16,6 +16,7 @@ struct AutomataState
     wchar_t *name;
     vector<AutomataTransition *> transitions;
     bool isAcceptable;
+    wstring returnType;
 };
 
 struct AutomataTransition
@@ -38,5 +39,7 @@ wstring getAlphabet(Stack<shuntingToken> *postfix);
 void printAutomata(Automata *automata);
 void completeAFD(Automata *automata);
 Automata *deepCopyAutomata(const Automata *original);
+Automata *addReturnType(Automata *automata, wstring returnType);
+Automata *joinAutomatas(vector<Automata *> automatas);
 
 #endif

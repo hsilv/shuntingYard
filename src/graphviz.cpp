@@ -67,7 +67,9 @@ void generateGraph(Automata *automata, wstring filename)
 
         if (state->isAcceptable)
         {
-            dotScript += "node [shape = doublecircle]; " + stateName + ";\n";
+            wstring returnTypeW(state->returnType);
+            string returnType = converter.to_bytes(returnTypeW);
+            dotScript += "node [shape = doublecircle, label=\"" + stateName + "\\nreturns: " + returnType + "\"];\n";
         }
         else
         {

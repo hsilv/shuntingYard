@@ -1,0 +1,611 @@
+struct Patterns
+    {
+        std::wstring regex;
+        std::wstring type;
+        Automata *automata;
+    };
+
+    std::vector<Symbol> errores;
+    std::vector<Symbol> lexemasAceptados;
+    std::vector<Patterns> regexes;
+
+    regexes.push_back({L"\\(", L"Opening parenthesis"});
+    regexes.push_back({L"\\)", L"Closing parenthesis"});
+    regexes.push_back({L"\\{", L"Opening curly bracket"});
+    regexes.push_back({L"\\}", L"Closing curly bracket"});
+    regexes.push_back({L"\\[", L"Opening square bracket"});
+    regexes.push_back({L"\\]", L"Closing square bracket"});
+    regexes.push_back({L"\\+", L"Plus sign"});
+    regexes.push_back({L"\\-", L"Minus sign"});
+    regexes.push_back({L"\\*", L"Asterisk"});
+    regexes.push_back({L"\\?", L"Question mark"});
+    regexes.push_back({L"\\;", L"Semicolon"});
+    regexes.push_back({L"\\|", L"Vertical bar"});
+    regexes.push_back({L"\\\\", L"Backslash"});
+    regexes.push_back({L"/", L"Slash"});
+    regexes.push_back({L"\\^", L"Caret"});
+    regexes.push_back({L"\\$", L"Dollar sign"});
+    regexes.push_back({L"#include", L"Include Statement"});
+    regexes.push_back({L"\\#", L"Sharp"});
+    regexes.push_back({L"\\.", L"Dot"});
+    regexes.push_back({L"let", L"Declaration"});
+    regexes.push_back({L"eof", L"End of file"});
+    regexes.push_back({L"return", L"Return Statement"});
+    regexes.push_back({L"=", L"Assignment"});
+    regexes.push_back({L"rule", L"Rule"});
+    regexes.push_back({L",", L"Comma"});
+    regexes.push_back({L"\"([a-z]|[A-Z]|[0-9]|\\\\|_|\\*|\\?|\\+|\\.|\\-|\\>|\\<|\\=)+\"", L"String Character"});
+    regexes.push_back({L"\'([a-z]|[A-Z]|[0-9]|\\\\|_|\\*|\\?|\\+|\\.|\\-|\\>|\\<|\\=)+\'", L"Regular Character"});
+    regexes.push_back({L"\"", L"Double quote"});
+    regexes.push_back({L"\'", L"Quote"});
+    regexes.push_back({L"entrypoint", L"Entrypoint"});
+    regexes.push_back({L"[0-9]+", L"Integer"});
+    regexes.push_back({L"[0-9]+(\\.[0-9]+)?", L"Decimal"});
+    regexes.push_back({L"([a-z]|[A-Z])+([a-z]|[A-Z]|[0-9])*", L"Identifier"});
+    regexes.push_back({L" ", L"Space"});
+
+    try
+    {
+        for (auto &pattern : regexes)
+        {
+            Stack<shuntingToken> postfixRegex = shuntingYard(pattern.regex.c_str());
+            std::wstring alphabet = getAlphabet(&postfixRegex);
+            pattern.automata = thompson(constructSyntaxTree(&postfixRegex), alphabet);
+        }
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Caught exception: " << e.what() << '\n';
+    }
+    catch (...)
+    {
+        std::cerr << "Caught unknown exception\n";
+    }
+
+    wcout << "Processing Lexical Analyzer" << endl;
+    try
+    {
+        std::wstring::iterator it = strText.begin();
+        int line = 1;
+        int column = 1;
+        bool inString = false;
+        bool inChar = false;
+        while (it != strText.end())
+        {
+            while (it != strText.end() && std::iswspace(*it))
+            {
+                if (*it == L'\n')
+                {
+                    ++line;
+                    column = 1;
+                }
+                else
+                {
+                    ++column;
+                }
+                ++it;
+            }
+
+            if (it == strText.end())
+                break;
+
+            std::wstring lexema;
+            bool match = false;
+
+            wcout << "Processing: " << *it << endl;
+
+            std::wstring delimiters = L"| #-+*?/^$.;:()[]{},.\n";
+
+            if (inString || inChar || delimiters.find(*it) == std::wstring::npos)
+            {
+                lexema += *it;
+                if (*it == L'\"')
+                {
+                    inString = !inString;
+                }
+                else if (*it == L'\'')
+                {
+                    inChar = !inChar;
+                }
+                while (it + 1 != strText.end() && (delimiters.find(*(it + 1)) == std::wstring::npos || inString || inChar))
+                {
+                    lexema += *++it;
+                    ++column;
+                    if (*it == L'\"')
+                    {
+                        inString = !inString;
+                    }
+                    else if (*it == L'\'')
+                    {
+                        inChar = !inChar;
+                    }
+                }
+            }
+            else if (*it != L' ')
+            {
+                lexema += *it;
+            }
+
+            for (auto &pattern : regexes)
+            {
+                if (simulateNFA(pattern.automata, lexema))
+                {
+                    match = true;
+                    Symbol symbol;
+                    symbol.type = wcsdup(pattern.type.c_str());
+                    symbol.value = wcsdup(lexema.c_str());
+                    symbol.numberLine = line;
+                    symbol.numberColumn = column - lexema.length() + 1;
+                    lexemasAceptados.push_back(symbol);
+                    break;
+                }
+            }
+
+            if (!match)
+            {
+                std::wistringstream iss(lexema);
+                std::wstring word;
+                while (iss >> word)
+                {
+                    Symbol symbol;
+                    symbol.type = L"Error";
+                    symbol.value = wcsdup(word.c_str());
+                    symbol.numberLine = line;
+                    symbol.numberColumn = column - word.length() + 1;
+                    errores.push_back(symbol);
+                }
+            }
+
+            ++it;
+            ++column;
+        }
+    }
+    catch (const std::exception &e)
+    {
+        std::cerr << "Caught exception: " << e.what() << std::endl;
+    }
+    catch (...)
+    {
+        std::cerr << "Caught unknown exception" << std::endl;
+    }
+    wcout << endl;
+
+    wcout << L"\n\033[1;37mLexemas aceptados\033[0m" << endl;
+    for (auto &lexema : lexemasAceptados)
+    {
+        if (lexema.type != L"String Character" || lexema.type == L"Regular Character")
+        {
+            std::wstring value = lexema.value;
+            std::replace(value.begin(), value.end(), L'_', L' ');
+            delete[] lexema.value;
+            lexema.value = new wchar_t[value.size() + 1];
+            std::copy(value.begin(), value.end(), lexema.value);
+            lexema.value[value.size()] = L'\0';
+        }
+        std::wcout << lexema.value << L" type: " << lexema.type << std::endl;
+    }
+
+    wcout << L"\n\033[1;37mErrores léxicos\033[0m" << endl;
+    for (auto &error : errores)
+    {
+        std::wcout << error.value << L" at line: " << error.numberLine << L" at column: " << error.numberColumn << std::endl;
+    }
+    wcout << endl;
+
+    std::vector<Symbol> lexicalAnalyzer;
+    std::vector<Symbol> variables;
+    std::vector<Symbol> lexErrors;
+    for (int i = 0; i < lexemasAceptados.size(); i++)
+    {
+        Symbol symbol = lexemasAceptados[i];
+
+        if (i == 0 && wcscmp(symbol.type, L"Opening curly bracket") == 0)
+        {
+            if (i + 1 < lexemasAceptados.size())
+            {
+                i++;
+            }
+            else
+            {
+                throw std::runtime_error("Unexpected end of file");
+            }
+            bool closedFounded = false;
+            while (i < lexemasAceptados.size())
+            {
+                if (wcscmp(lexemasAceptados[i].type, L"Closing curly bracket") == 0)
+                {
+                    closedFounded = true;
+                    break;
+                }
+                lexemasAceptados[i].type = L"Header Statement";
+                lexicalAnalyzer.push_back(lexemasAceptados[i]);
+                if (i + 1 < lexemasAceptados.size())
+                {
+                    i++;
+                }
+                else
+                {
+                    throw std::runtime_error("Unexpected end of file");
+                }
+            }
+        }
+        else if (wcscmp(symbol.type, L"Declaration") == 0)
+        {
+            if (i + 1 < lexemasAceptados.size())
+            {
+                i++;
+            }
+            else
+            {
+                throw std::runtime_error("Unexpected end of file");
+            }
+            if (wcscmp(lexemasAceptados[i].type, L"Identifier") == 0)
+            {
+                Symbol variable;
+                variable.type = lexemasAceptados[i].value;
+                if (i + 1 < lexemasAceptados.size())
+                {
+                    i++;
+                }
+                else
+                {
+                    throw std::runtime_error("Unexpected end of file");
+                }
+                if (wcscmp(lexemasAceptados[i].type, L"Assignment") == 0)
+                {
+                    if (i + 1 < lexemasAceptados.size())
+                    {
+                        i++;
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Unexpected end of file");
+                    }
+                    if (wcscmp(lexemasAceptados[i].type, L"Opening parenthesis") == 0)
+                    {
+                        if (i + 1 < lexemasAceptados.size())
+                        {
+                            i++;
+                        }
+                        else
+                        {
+                            throw std::runtime_error("Unexpected end of file");
+                        }
+                        std::wstring regexValue;
+                        while (wcscmp(lexemasAceptados[i].type, L"Closing parenthesis") != 0)
+                        {
+                            if (wcscmp(lexemasAceptados[i].type, L"Regular Character") == 0)
+                            {
+                                std::wstring value = lexemasAceptados[i].value;
+                                value.erase(std::remove(value.begin(), value.end(), '\''), value.end());
+                                regexValue += value;
+                            }
+                            else if (wcscmp(lexemasAceptados[i].type, L"String Character") == 0)
+                            {
+                                std::wstring value = lexemasAceptados[i].value;
+                                value.erase(std::remove(value.begin(), value.end(), '\"'), value.end());
+                                regexValue += value;
+                            }
+                            else if (wcscmp(lexemasAceptados[i].type, L"Identifier") == 0)
+                            {
+                                wcout << L"Identifier: " << lexemasAceptados[i].value << endl;
+                                for (const Symbol &variable : variables)
+                                {
+                                    if (wcscmp(variable.type, lexemasAceptados[i].value) == 0)
+                                    {
+                                        regexValue += variable.value;
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                regexValue += lexemasAceptados[i].value;
+                            }
+
+                            if (i + 1 < lexemasAceptados.size())
+                            {
+                                i++;
+                            }
+                            else
+                            {
+                                throw std::runtime_error("Unexpected end of file");
+                            }
+                        }
+                        variable.value = new wchar_t[regexValue.size() + 1];
+                        std::copy(regexValue.begin(), regexValue.end(), variable.value);
+                        variable.value[regexValue.size()] = L'\0';
+                        variables.push_back(variable);
+                    }
+                    else
+                    {
+                        lexErrors.push_back(lexemasAceptados[i]);
+                    }
+                }
+                else
+                {
+                    lexErrors.push_back(lexemasAceptados[i]);
+                }
+            }
+            else
+            {
+                lexErrors.push_back(lexemasAceptados[i]);
+            }
+        }
+        else if (wcscmp(symbol.type, L"Rule") == 0)
+        {
+            if (i + 1 < lexemasAceptados.size())
+            {
+                i++;
+            }
+            else
+            {
+                throw std::runtime_error("Unexpected end of file");
+            }
+
+            symbol = lexemasAceptados[i];
+            wcout << L"Building Rule: " << symbol.value << endl;
+            if (i + 1 < lexemasAceptados.size())
+            {
+                i++;
+            }
+            else
+            {
+                throw std::runtime_error("Unexpected end of file");
+            }
+            if (wcscmp(lexemasAceptados[i].type, L"Opening square bracket") == 0)
+            {
+                wcout << L"Including params... " << endl;
+                if (i + 1 < lexemasAceptados.size())
+                {
+                    i++;
+                }
+                else
+                {
+                    throw std::runtime_error("Unexpected end of file");
+                }
+                while (wcscmp(lexemasAceptados[i].type, L"Closing square bracket") != 0)
+                {
+                    wcout << L"Param: " << lexemasAceptados[i].value << endl;
+                    if (i + 1 < lexemasAceptados.size())
+                    {
+                        i++;
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Unexpected end of file");
+                    }
+                }
+                if (i + 1 < lexemasAceptados.size())
+                {
+                    i++;
+                }
+                else
+                {
+                    throw std::runtime_error("Unexpected end of file");
+                }
+            }
+            if (wcscmp(lexemasAceptados[i].type, L"Assignment") == 0)
+            {
+                bool keepGoing = false;
+
+                do
+                {
+                    if (i + 1 < lexemasAceptados.size())
+                    {
+                        i++;
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Unexpected end of file");
+                    }
+                    std::wstring regexValue;
+                    std::wstring returnType;
+                    wcout << endl;
+                    wcout << L"Building regex... " << lexemasAceptados[i].value << endl;
+                    wcout << endl;
+                    if (wcscmp(lexemasAceptados[i].type, L"Opening parenthesis") == 0)
+                    {
+                        if (i + 1 < lexemasAceptados.size())
+                        {
+                            i++;
+                        }
+                        else
+                        {
+                            throw std::runtime_error("Unexpected end of file");
+                        }
+                        while (wcscmp(lexemasAceptados[i].type, L"Closing parenthesis") != 0)
+                        {
+
+                            if (wcscmp(lexemasAceptados[i].type, L"Regular Character") == 0)
+                            {
+                                std::wstring value = lexemasAceptados[i].value;
+                                value.erase(std::remove(value.begin(), value.end(), '\''), value.end());
+                                regexValue += value;
+                            }
+                            else if (wcscmp(lexemasAceptados[i].type, L"String Character") == 0)
+                            {
+                                std::wstring value = lexemasAceptados[i].value;
+                                value.erase(std::remove(value.begin(), value.end(), '\"'), value.end());
+                                regexValue += value;
+                            }
+                            else if (wcscmp(lexemasAceptados[i].type, L"Identifier") == 0)
+                            {
+                                for (const Symbol &variable : variables)
+                                {
+                                    if (wcscmp(variable.type, lexemasAceptados[i].value) == 0)
+                                    {
+                                        regexValue += variable.value;
+                                        break;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                regexValue += lexemasAceptados[i].value;
+                            }
+
+                            if (i + 1 < lexemasAceptados.size())
+                            {
+                                i++;
+                            }
+                            else
+                            {
+                                throw std::runtime_error("Unexpected end of file");
+                            }
+                        }
+                        wcout << L"Regex: " << regexValue << endl;
+                    }
+                    else if (wcscmp(lexemasAceptados[i].type, L"Identifier") == 0)
+                    {
+                        wcout << L"Identifier: " << lexemasAceptados[i].value << endl;
+                        std::wstring identifierValue;
+                        for (const Symbol &variable : variables)
+                        {
+                            if (wcscmp(variable.type, lexemasAceptados[i].value) == 0)
+                            {
+                                identifierValue = variable.value;
+                                break;
+                            }
+                        }
+                        regexValue = identifierValue;
+                        wcout << L"Value: " << identifierValue << endl;
+                    }
+                    else
+                    {
+                        lexErrors.push_back(lexemasAceptados[i]);
+                    }
+
+                    if (i + 1 < lexemasAceptados.size())
+                    {
+                        i++;
+                    }
+                    else
+                    {
+                        throw std::runtime_error("Unexpected end of file");
+                    }
+                    if (wcscmp(lexemasAceptados[i].type, L"Opening curly bracket") == 0)
+                    {
+                        if (i + 1 < lexemasAceptados.size())
+                        {
+                            i++;
+                        }
+                        else
+                        {
+                            throw std::runtime_error("Unexpected end of file");
+                        }
+                        if (wcscmp(lexemasAceptados[i].type, L"Return Statement") == 0)
+                        {
+                            if (i + 1 < lexemasAceptados.size())
+                            {
+                                i++;
+                            }
+                            else
+                            {
+                                throw std::runtime_error("Unexpected end of file");
+                            }
+                            if (wcscmp(lexemasAceptados[i].type, L"Identifier") == 0)
+                            {
+                                returnType = lexemasAceptados[i].value;
+                                wcout << L"Return type: " << returnType << endl;
+
+                                if (i + 1 < lexemasAceptados.size())
+                                {
+                                    i++;
+                                }
+                                else
+                                {
+                                    throw std::runtime_error("Unexpected end of file");
+                                }
+                            }
+                            else
+                            {
+                                lexErrors.push_back(lexemasAceptados[i]);
+                            }
+                        }
+                        else
+                        {
+                            lexErrors.push_back(lexemasAceptados[i]);
+                        }
+                    }
+                    else
+                    {
+                        lexErrors.push_back(lexemasAceptados[i]);
+                    }
+                    if (!regexValue.empty() && !returnType.empty())
+                    {
+                        Symbol lexicalRule;
+                        lexicalRule.type = new wchar_t[returnType.length() + 1];
+                        lexicalRule.value = new wchar_t[regexValue.length() + 1];
+                        wcscpy(lexicalRule.type, returnType.c_str());
+                        wcscpy(lexicalRule.value, regexValue.c_str());
+                        lexicalAnalyzer.push_back(lexicalRule);
+                    }
+                    if (i + 1 < lexemasAceptados.size())
+                    {
+                        if (i + 1 < lexemasAceptados.size())
+                        {
+                            i++;
+                        }
+                        else
+                        {
+                            throw std::runtime_error("Unexpected end of file");
+                        }
+                        if (wcscmp(lexemasAceptados[i].type, L"Vertical bar") == 0)
+                        {
+                            wcout << L"Keep going... " << lexemasAceptados[i].value << endl;
+                            keepGoing = true;
+                        }
+                        else
+                        {
+                            keepGoing = false;
+                        }
+                    }
+                    else
+                    {
+                        keepGoing = false;
+                    }
+                } while (keepGoing);
+            }
+            else
+            {
+                lexErrors.push_back(lexemasAceptados[i]);
+            }
+        }
+
+        wcout << L"\nLexical Analyzer: " << endl;
+        for (auto &symbol : lexicalAnalyzer)
+        {
+            std::wcout << symbol.value << L" type: " << symbol.type << std::endl;
+        }
+
+        try
+        {
+            for (auto &pattern : lexicalAnalyzer)
+            {
+                Stack<shuntingToken> postfixRegex = shuntingYard(pattern.value);
+                std::wstring alphabet = getAlphabet(&postfixRegex);
+                Automata *automata = thompson(constructSyntaxTree(&postfixRegex), alphabet);
+                std::wstring type = pattern.type;
+
+                std::transform(type.begin(), type.end(), type.begin(),
+                               [](wchar_t c)
+                               { return std::towlower(c); });
+
+                std::replace(type.begin(), type.end(), L' ', L'_');
+
+                std::wstring prefix = L"lex_";
+                type = prefix + type;
+
+                generateGraph(automata, type);
+            }
+        }
+        catch (const std::exception &e)
+        {
+            std::cerr << "Caught exception: " << e.what() << '\n';
+        }
+        catch (...)
+        {
+            std::cerr << "Caught unknown exception\n";
+        }
+    }
