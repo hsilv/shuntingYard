@@ -26,6 +26,12 @@ Stack<shuntingToken> postfix;
 Stack<shuntingToken> postfixAugmented;
 Automata *automatas;
 
+struct Tables
+{
+    vector<Symbol *> SymbolTable;
+    vector<Symbol *> ErrorTable;
+};
+
 vector<Automata *> addRegex(vector<Automata *> automatas, wstring regex, wstring returnType)
 {
     postfix = shuntingYard(regex.c_str());
@@ -37,7 +43,7 @@ vector<Automata *> addRegex(vector<Automata *> automatas, wstring regex, wstring
     return automatas;
 }
 
-Automata *configAutomatas()
+Automata *configYalexAutomata()
 {
     vector<Automata *> automatas;
     automatas = addRegex(automatas, L"let(( )+|\n)", L"Declaration");
@@ -70,11 +76,10 @@ Automata *configAutomatas()
     automatas = addRegex(automatas, L"rule( )+", L"Rule");
     automatas = addRegex(automatas, L"\"", L"Double Quote");
     automatas = addRegex(automatas, L"\'", L"Single Quote");
-    automatas = addRegex(automatas, L"\"([a-z]|[A-Z]|[0-9]|\\\\|_|\\*|\\?|\\+|\\.|\\-|\\>|\\<|\\=)+\"", L"String Character");
+    automatas = addRegex(automatas, L"\"([a-z]|[A-Z]|[0-9]|\\\\| |\\*|\\?|\\+|\\.|\\-|\\>|\\<|\\=|:|_|\'|\\(|\\)|/| )+\"", L"String Character");
+    automatas = addRegex(automatas, L"\'([a-z]|[A-Z]|[0-9]|\\\\| |\\*|\\?|\\+|\\.|\\-|\\>|\\<|\\=|:|_|\"|\\(|\\)|/| )+\'", L"Regular Character");
     automatas = addRegex(automatas, L"([a-z]|[A-Z])+([a-z]|[A-Z]|[0-9])*", L"Identifier");
     automatas = addRegex(automatas, L"entrypoint", L"Entrypoint");
-    automatas = addRegex(automatas, L"[0-9]+", L"Integer Number");
-    automatas = addRegex(automatas, L"[0-9]+(\\.[0-9]+)?", L"Decimal Number");
     automatas = addRegex(automatas, L"eof", L"End of File");
     return joinAutomatas(automatas);
 }
@@ -129,102 +134,11 @@ wxStyledTextCtrl *MyFrame::CreateEditor()
     return textCtrl;
 }
 
-/* wstring evalRegex(wstring regex, wstring input)
-{
-    postfix = shuntingYard(regex.c_str());
-    TreeNode *tree = constructSyntaxTree(&postfix);
-    wstring alphabet = getAlphabet(&postfix);
-    Automata *mcythompson = thompson(tree, alphabet);
-    Automata *subset = subsetConstruction(mcythompson);
-    Automata *subsetCopy = deepCopyAutomata(subset);
-    Automata *minifiedSubset = minifyAutomata(subsetCopy);
-    return simulateNFA(mcythompson, input);
-} */
-
 bool MyApp::OnInit()
 {
-    automatas = configAutomatas();
+    automatas = configYalexAutomata();
     printAutomata(automatas);
-    /* if (argc != 3)
-    {
-        cerr << "\033[1;31m"
-             << "ERROR: Debe ingresar una expresión regular y una cadena a validar"
-             << "\033[0m" << endl;
-        return 1;
-    } */
-    // Inicio de la ejecución e inicio de medidor de reloj
-    /* locale::global(locale("en_US.UTF-8"));
-    wstring_convert<codecvt_utf8<wchar_t>, wchar_t> converter;
-    wstring wide = converter.from_bytes(argv[1]);
-    wstring expresion = converter.from_bytes(argv[2]);
-    const wchar_t *wide_cstr = wide.c_str(); */
-    /* auto start = chrono::high_resolution_clock::now(); */
-
-    /*  try
-     {
-         postfix = shuntingYard(wide_cstr);
-         postfixAugmented = shuntingYard((wstring(wide_cstr) + L"#").c_str());
-         TreeNode *tree = constructSyntaxTree(&postfix);
-         print2D(tree);
-         TreeNode *treeAugmented = constructSyntaxTree(&postfixAugmented);
-         TreeNode *augmentedParsedTree = parseTree(treeAugmented);
-         print2D(treeAugmented);
-         wstring alphabet = getAlphabet(&postfix);
-         wcout << "\n----------------------------------------\033[1;37m Por algoritmo McNaughton-Yamada-Thompson \033[0m----------------------------------------" << endl;
-         Automata *mcythompson = thompson(tree, alphabet);
-         printAutomata(mcythompson);
-         generateGraph(mcythompson, L"mcythompson");
-         wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos \033[0m----------------------------------------" << endl;
-         Automata *subset = subsetConstruction(mcythompson);
-         printAutomata(subset);
-         generateGraph(subset, L"bysubsets");
-
-         wcout << "\n----------------------------------------\033[1;37m Por Construccion directa \033[0m----------------------------------------" << endl;
-         size_t pos = alphabet.find(L'ε');
-         if (pos != std::wstring::npos)
-         {
-             alphabet.erase(pos, 1);
-         }
-         Automata *direct = directConstruction(augmentedParsedTree, alphabet);
-         completeAFD(direct);
-         printAutomata(direct);
-         generateGraph(direct, L"bydirect");
-         wcout << "\n----------------------------------------\033[1;37m Por Construccion de Subconjuntos (Minificado) \033[0m----------------------------------------" << endl;
-
-         Automata *subsetCopy = deepCopyAutomata(subset);
-         printAutomata(subsetCopy);
-         Automata *minifiedSubset = minifyAutomata(subsetCopy);
-         printAutomata(minifiedSubset);
-         generateGraph(minifiedSubset, L"bysubsetsminified");
-         wcout << "\n----------------------------------------\033[1;37m Por Construccion directa (Minificado) \033[0m----------------------------------------" << endl;
-         Automata *minifiedDirect = minifyAutomata(direct);
-         printAutomata(minifiedDirect);
-         generateGraph(minifiedDirect, L"bydirectminified");
-
-         wcout << L"\n\033[1;37mSimulacion de AFD por subconjuntos\033[0m" << endl;
-         simulateAutomata(subset, expresion);
-         wcout << L"\n\033[1;37mSimulacion de AFD por construccion directa\033[0m" << endl;
-         simulateAutomata(direct, expresion);
-         wcout << L"\n\033[1;37mSimulacion de AFD por subconjuntos (minificado)\033[0m" << endl;
-         simulateAutomata(minifiedSubset, expresion);
-         wcout << L"\n\033[1;37mSimulacion de AFD por construccion directa (minificado)\033[0m" << endl;
-         simulateAutomata(minifiedDirect, expresion);
-         wcout << L"\n\033[1;37mSimulacion de AFN por McNaughton-Yamada-Thompson\033[0m" << endl;
-         simulateNFA(mcythompson, expresion);
-     }
-     catch (const exception &e)
-     {
-         cerr << "\033[1;31m"
-              << "ERROR: " << e.what() << "\033[0m" << endl;
-     } */
-
-    // Fin de la ejecución e impresión de tiempo transcurrido
-    /* auto end = chrono::high_resolution_clock::now();
-    auto elapsed = chrono::duration_cast<chrono::milliseconds>(end - start);
-    wstringstream wss;
-    wss << elapsed.count();
-    wstring elapsed_wstr = wss.str();
-    wcout << L"\n\033[1;32mElapsed time: " << elapsed_wstr << L" ms\n\033[0m\n"; */
+    /* generateGraph(automatas, L"YaLex"); */
     MyFrame *frame = new MyFrame("Code Editor");
     frame->Show(true);
     return true;
@@ -274,15 +188,16 @@ MyFrame::MyFrame(const wxString &title)
     Bind(wxEVT_MENU, &MyFrame::OnSave, this, wxID_SAVE);
 }
 
-void MyFrame::OnYes(wxCommandEvent &event)
+Tables analyzeLexical(Automata *automata, wstring strText)
 {
     vector<Symbol *> SymbolTable = vector<Symbol *>();
     vector<Symbol *> ErrorTable = vector<Symbol *>();
-    wxStyledTextCtrl *textCtrl = (wxStyledTextCtrl *)notebook->GetCurrentPage();
-    wxString text = textCtrl->GetText();
-    wstring strText(text.wc_str());
+    Tables tables = Tables();
 
-    wstring cleanedText;
+    int fileSize = strText.length();
+    int processedSize = 0;
+
+    wcout << strText << endl;
 
     wstring::iterator begin = strText.begin();
     wstring::iterator end = strText.end();
@@ -294,164 +209,289 @@ void MyFrame::OnYes(wxCommandEvent &event)
 
     wstring latestAcceptedSymbol = L"";
 
-    while (strText.length() > 0)
-    {
-        while (current != strText.end())
-        {
-            wstring substring = strText.substr(0, distance(begin, current + 1));
-            wstring result = simulateNFA(automatas, substring);
+    // Define los delimitadores
+    wstring delimiters = L"\t\n";
 
-            if (result != L"")
+    vector<wstring> tokens;
+    size_t startString = 0;
+    size_t endString = strText.find_first_of(delimiters);
+
+    while (endString != wstring::npos)
+    {
+        // Añade el token, incluyendo el delimitador
+        tokens.push_back(strText.substr(startString, endString - startString + 1));
+
+        // Encuentra el inicio del siguiente token
+        startString = endString + 1;
+        endString = strText.find_first_of(delimiters, startString);
+    }
+
+    // Añade el último token si no termina con un delimitador
+    if (startString != strText.length())
+    {
+        tokens.push_back(strText.substr(startString));
+    }
+
+    for (const wstring &token : tokens)
+    {
+        /* wcout << token << L" " << token.length() << endl; */
+        processedSize += token.length();
+        wcout << L"Processed: " << processedSize << L" of " << fileSize << endl;
+        strText = token;
+        while (strText.length() > 0)
+        {
+            while (current != strText.end())
             {
-                if (*current == L'\n')
+                wstring substring = strText.substr(0, distance(begin, current + 1));
+                wstring result = simulateNFA(automata, substring);
+
+                if (result != L"")
                 {
-                    numberLine++;
-                    numberCol = 1;
+                    if (*current == L'\n')
+                    {
+                        numberLine++;
+                        numberCol = 1;
+                    }
+                    else
+                    {
+                        numberCol = substring.length() - substring.rfind(L'\n');
+                    }
+
+                    latestAccepted = current;
+                    latestAcceptedSymbol = result;
+                    latestRejected = begin;
                 }
                 else
                 {
-                    numberCol = substring.length() - substring.rfind(L'\n');
+                    latestRejected = current;
                 }
+                current++;
+            }
 
-                /*  wcout << substring << L" " << result << endl; */
-                latestAccepted = current;
-                latestAcceptedSymbol = result;
-                latestRejected = begin;
+            if (latestAcceptedSymbol != L"" || latestAccepted != begin)
+            {
+                wstring acceptedSubstring = strText.substr(0, distance(begin, latestAccepted + 1));
+                Symbol *symbol = new Symbol();
+                symbol->value = wcsdup(acceptedSubstring.c_str());
+                symbol->type = wcsdup(latestAcceptedSymbol.c_str());
+                symbol->numberLine = numberLine;
+                symbol->numberColumn = numberCol;
+                SymbolTable.push_back(symbol);
+                strText.erase(0, distance(begin, latestAccepted + 1));
+                begin = strText.begin();
+                current = strText.begin();
+                latestAccepted = strText.begin();
+                latestRejected = strText.begin();
+                end = strText.end();
+                latestAcceptedSymbol = L"";
             }
             else
             {
-                latestRejected = current;
-            }
-            current++;
-        }
+                latestAcceptedSymbol = L"";
+                wstring rejectedSubstring = strText.substr(0, distance(begin, latestRejected + 1));
 
-        if (latestAcceptedSymbol != L"" || latestAccepted != begin)
-        {
-            wstring acceptedSubstring = strText.substr(0, distance(begin, latestAccepted + 1));
-            Symbol *symbol = new Symbol();
-            symbol->value = wcsdup(acceptedSubstring.c_str());
-            symbol->type = wcsdup(latestAcceptedSymbol.c_str());
-            symbol->numberLine = numberLine;
-            symbol->numberColumn = numberCol;
-            SymbolTable.push_back(symbol);
-            strText.erase(0, distance(begin, latestAccepted + 1));
-            begin = strText.begin();
-            current = strText.begin();
-            latestAccepted = strText.begin();
-            latestRejected = strText.begin();
-            end = strText.end();
-            latestAcceptedSymbol = L"";
-            /* wcout << L"Latest Accepted: " << acceptedSubstring << L" " << latestAcceptedSymbol << endl; */
-        }
-        else
-        {
-            latestAcceptedSymbol = L"";
-            wstring rejectedSubstring = strText.substr(0, distance(begin, latestRejected + 1));
+                wstring::iterator beginRejected = begin;
+                wstring::iterator endRejected = latestRejected;
+                wstring::iterator evalCursor = beginRejected;
+                wstring::iterator delimiter;
 
-            wstring::iterator beginRejected = begin;
-            wstring::iterator endRejected = latestRejected;
-            wstring::iterator evalCursor = beginRejected;
-            wstring::iterator delimiter;
+                wstring refusedToken = L"";
 
-            wstring refusedToken = L"";
-
-            while (evalCursor != endRejected)
-            {
-                int bias = distance(evalCursor, endRejected) + 1;
-                /* wcout << L"bias: " << bias << endl; */
-                int startSubs = distance(beginRejected, evalCursor);
-
-                /* wcout << L"startSubs: " << startSubs << endl; */
-                for (int j = 1; j <= bias; j++)
+                while (evalCursor != endRejected)
                 {
-                    wstring substringEval = strText.substr(startSubs, j);
-                    /* wcout << j << substringEval << endl; */
-                    wstring resultSim = simulateNFA(automatas, substringEval);
+                    int bias = distance(evalCursor, endRejected) + 1;
+                    int startSubs = distance(beginRejected, evalCursor);
+
+                    for (int j = 1; j <= bias; j++)
+                    {
+                        wstring substringEval = strText.substr(startSubs, j);
+                        wstring resultSim = simulateNFA(automata, substringEval);
+
+                        if (resultSim != L"")
+                        {
+                            refusedToken = strText.substr(0, startSubs);
+                            delimiter = evalCursor;
+                            break;
+                        }
+                    }
+                    if (delimiter == evalCursor)
+                    {
+                        break;
+                    }
+                    evalCursor++;
+                }
+
+                if (evalCursor == endRejected)
+                {
+                    wstring substringEval = strText.substr(distance(begin, evalCursor), 1);
+                    wstring resultSim = simulateNFA(automata, substringEval);
 
                     if (resultSim != L"")
                     {
-                        refusedToken = strText.substr(0, startSubs);
-                        /* wcout << L"Refused: " << refusedToken << endl; */
+                        refusedToken = strText.substr(0, distance(beginRejected, evalCursor));
                         delimiter = evalCursor;
-                        break;
                     }
                 }
-                if (delimiter == evalCursor)
+
+                Symbol *symbol = new Symbol();
+                if (refusedToken == L"")
                 {
-                    break;
+                    symbol->value = wcsdup(rejectedSubstring.c_str());
+                    symbol->type = L"Error";
+                    symbol->numberLine = numberLine;
+                    symbol->numberColumn = numberCol;
+                    ErrorTable.push_back(symbol);
+                    strText.erase(0, distance(begin, latestRejected + 1));
+                    begin = strText.begin();
+                    current = strText.begin();
+                    latestAccepted = strText.begin();
+                    latestRejected = strText.begin();
+                    end = strText.end();
                 }
-                evalCursor++;
-            }
-
-            if (evalCursor == endRejected)
-            {
-                wstring substringEval = strText.substr(distance(begin, evalCursor), 1);
-                wstring resultSim = simulateNFA(automatas, substringEval);
-
-                if (resultSim != L"")
+                else
                 {
-                    refusedToken = strText.substr(0, distance(beginRejected, evalCursor));
-                    /* wcout << L"Refused: " << refusedToken << endl; */
-                    delimiter = evalCursor;
+                    symbol->value = wcsdup(refusedToken.c_str());
+                    symbol->type = L"Error";
+                    symbol->numberLine = numberLine;
+                    symbol->numberColumn = numberCol;
+                    ErrorTable.push_back(symbol);
+                    strText.erase(0, distance(begin, delimiter));
+                    begin = strText.begin();
+                    current = strText.begin();
+                    latestAccepted = strText.begin();
+                    latestRejected = strText.begin();
+                    end = strText.end();
                 }
             }
 
-            Symbol *symbol = new Symbol();
-            if (refusedToken == L"")
+            if (current == strText.end())
             {
-                symbol->value = wcsdup(rejectedSubstring.c_str());
-                symbol->type = L"Error";
-                symbol->numberLine = numberLine;
-                symbol->numberColumn = numberCol;
-                ErrorTable.push_back(symbol);
-                strText.erase(0, distance(begin, latestRejected + 1));
-                begin = strText.begin();
-                current = strText.begin();
-                latestAccepted = strText.begin();
-                latestRejected = strText.begin();
-                end = strText.end();
-                /* wcout << L"Latest Rejected: " << rejectedSubstring << L" " << L"Rejected" << endl; */
+                break;
             }
-            else
-            {
-                symbol->value = wcsdup(refusedToken.c_str());
-                symbol->type = L"Error";
-                symbol->numberLine = numberLine;
-                symbol->numberColumn = numberCol;
-                ErrorTable.push_back(symbol);
-                strText.erase(0, distance(begin, delimiter));
-                begin = strText.begin();
-                current = strText.begin();
-                latestAccepted = strText.begin();
-                latestRejected = strText.begin();
-                end = strText.end();
-                /* wcout << L"Latest Rejected: " << refusedToken << L" " << L"Rejected" << endl; */
-            }
-        }
-
-        if (current == strText.end())
-        {
-            break;
         }
     }
+
+    tables.SymbolTable = SymbolTable;
+    tables.ErrorTable = ErrorTable;
+
+    return tables;
+}
+
+void MyFrame::OnYes(wxCommandEvent &event)
+{
+    vector<Symbol *> SymbolTable = vector<Symbol *>();
+    vector<Symbol *> ErrorTable = vector<Symbol *>();
+    wxStyledTextCtrl *textCtrl = (wxStyledTextCtrl *)notebook->GetCurrentPage();
+    wxString text = textCtrl->GetText();
+    wstring strText(text.wc_str());
+
+    wstring cleanedText = cleanText(strText);
+    strText = cleanedText;
+
+    Tables tables = analyzeLexical(automatas, strText);
+
+    SymbolTable = tables.SymbolTable;
+    ErrorTable = tables.ErrorTable;
 
     wcout << endl;
     wcout << "Symbol Table" << endl;
-    for (Symbol *symbol : SymbolTable)
+
+    // Elimina los tokens de tipo "Line Break" de la tabla de símbolos
+    /* SymbolTable.erase(std::remove_if(SymbolTable.begin(), SymbolTable.end(),
+                                     [](Symbol *symbol)
+                                     { return wcscmp(symbol->type, L"Line Break") == 0; }),
+                      SymbolTable.end()); */
+
+    std::vector<Symbol *>::iterator current = SymbolTable.begin();
+    std::vector<Symbol *>::iterator eof = SymbolTable.end();
+
+    std::map<std::wstring, std::vector<Symbol *>> variables;
+
+    bool waitingForIdentifier = false;
+    bool waitingForEqual = false;
+    bool collectingValue = false;
+    std::wstring currentIdentifier;
+    std::vector<Symbol *> currentValue;
+
+    while (current != eof)
     {
-        wcout << L"Token: " << symbol->value << L" Type: " << symbol->type << L" Line: " << symbol->numberLine << L" Column: " << symbol->numberColumn << endl;
+        Symbol *symbol = *current;
+
+        if (wcscmp(symbol->type, L"Declaration") == 0)
+        {
+            waitingForIdentifier = true;
+        }
+        else if (waitingForIdentifier && wcscmp(symbol->type, L"Identifier") == 0)
+        {
+            waitingForIdentifier = false;
+            waitingForEqual = true;
+            currentIdentifier = symbol->value;
+        }
+        else if (waitingForEqual && wcscmp(symbol->type, L"Assignment Operator") == 0)
+        {
+            waitingForEqual = false;
+            collectingValue = true;
+        }
+        else if (collectingValue)
+        {
+            if (wcscmp(symbol->type, L"Identifier") == 0)
+            {
+                // If the identifier is found in the variables map, replace it with its value
+                if (variables.find(symbol->value) != variables.end())
+                {
+                    std::vector<Symbol *> value = variables[symbol->value];
+                    currentValue.insert(currentValue.end(), value.begin(), value.end());
+                }
+                else
+                {
+                    currentValue.push_back(symbol);
+                }
+            }
+            else if (wcscmp(symbol->type, L"Regular Character") == 0)
+            {
+                // Ignore the first and last character of the value
+                Symbol *newSymbol = new Symbol;
+                newSymbol->type = symbol->type;
+                size_t len = wcslen(symbol->value);
+                newSymbol->value = new wchar_t[len - 1];
+                wcsncpy(newSymbol->value, symbol->value + 1, len - 2);
+                newSymbol->value[len - 2] = '\0';
+                newSymbol->numberLine = symbol->numberLine;
+                newSymbol->numberColumn = symbol->numberColumn;
+                currentValue.push_back(newSymbol);
+            }
+            else if (wcscmp(symbol->type, L"Line Break") == 0)
+            {
+                collectingValue = false;
+                variables[currentIdentifier] = currentValue;
+                currentValue.clear();
+            }
+            else
+            {
+                currentValue.push_back(symbol);
+            }
+        }
+
+        current++;
     }
+
     wcout << endl;
+    wcout << L"Variables: " << endl;
+    for (auto const &variable : variables)
+    {
+        wcout << variable.first << L": ";
+        for (Symbol *symbol : variable.second)
+        {
+            wcout << symbol->value;
+        }
+        wcout << endl;
+    }
 
     wcout << "Error Table" << endl;
     for (Symbol *symbol : ErrorTable)
     {
         wcout << L"Token: " << symbol->value << L" Type: " << symbol->type << L" Line: " << symbol->numberLine << L" Column: " << symbol->numberColumn << endl;
     }
-
-    wcout << cleanedText << endl;
-
-    /* generateGraph(automatas, L"newAutomata"); */
 }
 
 void MyFrame::OnExit(wxCommandEvent &event)

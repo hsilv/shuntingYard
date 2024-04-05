@@ -5,7 +5,7 @@
 let delim = (' ')
 let ws = delim+
 let letter = ['A'-'Z''a'-'z']
-let str = (_)*
+let str = ( )*
 let digit = ['0'-'9']
 let digits = digit+
 let id = letter(letter|str|digit)*
@@ -27,4 +27,5 @@ rule tokens =
   | ')'       { return RPAREN }
 
 (* Introducir cualquier trailer aqui *)
+
 

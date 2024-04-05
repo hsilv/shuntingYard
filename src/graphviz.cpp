@@ -12,15 +12,15 @@ string escapeSpecialChars(const string &input)
 {
     string output = input;
     size_t pos = 0;
-    while ((pos = output.find('"', pos)) != string::npos)
-    {
-        output.replace(pos, 1, "\\\"");
-        pos += 2;
-    }
-    pos = 0;
     while ((pos = output.find('\\', pos)) != string::npos)
     {
         output.replace(pos, 1, "\\\\");
+        pos += 2;
+    }
+    pos = 0;
+    while ((pos = output.find('"', pos)) != string::npos)
+    {
+        output.replace(pos, 1, "\\\"");
         pos += 2;
     }
     pos = 0;
