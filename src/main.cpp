@@ -81,6 +81,7 @@ Automata *configYalexAutomata()
     automatas = addRegex(automatas, L"([a-z]|[A-Z])+([a-z]|[A-Z]|[0-9])*", L"Identifier");
     automatas = addRegex(automatas, L"entrypoint", L"Entrypoint");
     automatas = addRegex(automatas, L"eof", L"End of File");
+    /* automatas = addRegex(automatas, L"[0-9]*", L"Number"); */
     return joinAutomatas(automatas);
 }
 
@@ -402,23 +403,34 @@ void MyFrame::OnYes(wxCommandEvent &event)
                                      { return wcscmp(symbol->type, L"Line Break") == 0; }),
                       SymbolTable.end()); */
 
+    for (Symbol *symbol : SymbolTable)
+    {
+        wcout << L"Token: " << symbol->value << L" Type: " << symbol->type << L" Line: " << symbol->numberLine << L" Column: " << symbol->numberColumn << endl;
+    }
+
     std::vector<Symbol *>::iterator current = SymbolTable.begin();
     std::vector<Symbol *>::iterator eof = SymbolTable.end();
 
     std::map<std::wstring, std::vector<Symbol *>> variables;
+    std::map<wstring, wstring> rules;
 
     bool waitingForIdentifier = false;
     bool waitingForEqual = false;
     bool collectingValue = false;
+    bool inRule = false;
+    bool allowAddRule = false;
+    bool waitingForRuleIdentifier = false;
     std::wstring currentIdentifier;
     std::vector<Symbol *> currentValue;
+    std::wstring ruleRegex;
 
     while (current != eof)
     {
         Symbol *symbol = *current;
 
-        if (wcscmp(symbol->type, L"Declaration") == 0)
+        if (wcscmp(symbol->type, L"Declaration") == 0 || (wcscmp(symbol->type, L"Rule") == 0 && !inRule))
         {
+            inRule = wcscmp(symbol->type, L"Rule") == 0;
             waitingForIdentifier = true;
         }
         else if (waitingForIdentifier && wcscmp(symbol->type, L"Identifier") == 0)
@@ -432,7 +444,7 @@ void MyFrame::OnYes(wxCommandEvent &event)
             waitingForEqual = false;
             collectingValue = true;
         }
-        else if (collectingValue)
+        else if (!inRule && collectingValue)
         {
             if (wcscmp(symbol->type, L"Identifier") == 0)
             {
@@ -471,6 +483,71 @@ void MyFrame::OnYes(wxCommandEvent &event)
                 currentValue.push_back(symbol);
             }
         }
+        else if (inRule)
+        {
+            if (wcscmp(symbol->type, L"Space") == 0 || wcscmp(symbol->type, L"Vertical Bar") == 0 || wcscmp(symbol->type, L"Line Break") == 0)
+            {
+            }
+            else if (!allowAddRule && wcscmp(symbol->type, L"Identifier") == 0)
+            {
+                if (variables.find(symbol->value) != variables.end())
+                {
+                    std::vector<Symbol *> value = variables[symbol->value];
+                    std::wstring valueStr;
+                    for (auto &val : value)
+                    {
+                        valueStr += val->value;
+                    }
+                    wcout << L"Value: " << valueStr << endl;
+                    ruleRegex += valueStr;
+                }
+                else
+                {
+                    wcout << L"Error: Identifier " << symbol->value << L" not found" << endl;
+                }
+            }
+            else if (allowAddRule == false && (wcscmp(symbol->type, L"Regular Character") == 0 || wcscmp(symbol->type, L"String Character") == 0))
+            {
+                std::wstring valueStr(symbol->value);
+                if (valueStr.length() > 2) // Check if the string has more than 2 characters
+                {
+                    // Add the value of the symbol to ruleRegex, excluding the first and last character
+                    ruleRegex += valueStr.substr(1, valueStr.length() - 2);
+                }
+            }
+            else if (wcscmp(symbol->type, L"Opening Curly Bracket") == 0)
+            {
+                wcout << L"Rule Opening Curly Bracket" << endl;
+                allowAddRule = true;
+            }
+
+            else if (allowAddRule && wcscmp(symbol->type, L"Return Statement") == 0)
+            {
+                wcout << L"Waiting for Identifier" << endl;
+                waitingForRuleIdentifier = true;
+            }
+            else if (allowAddRule && waitingForRuleIdentifier /*  && wcscmp(symbol->type, L"Identifier") == 0 */)
+            {
+                // Add the rule to the rules map, the identifier will be key, and the ruleRegex will be the value
+                wcout << L"Adding Rule: " << symbol->value << endl;
+                rules[symbol->value] = ruleRegex;
+                ruleRegex = L"";
+                waitingForRuleIdentifier = false;
+            }
+            else if (allowAddRule && wcscmp(symbol->type, L"Closing Curly Bracket") == 0)
+            {
+                allowAddRule = false;
+            }
+            else if (allowAddRule == false)
+            {
+                std::wstring valueStr(symbol->value);
+                ruleRegex += valueStr;
+            }
+            else
+            {
+                wcout << L"Error: Unexpected symbol " << symbol->value << L" in rule" << endl;
+            }
+        }
 
         current++;
     }
@@ -486,6 +563,26 @@ void MyFrame::OnYes(wxCommandEvent &event)
         }
         wcout << endl;
     }
+
+    wcout << endl;
+    wcout << L"Rules: " << endl;
+    for (auto const &rule : rules)
+    {
+        wcout << rule.first << L": " << rule.second << endl;
+    }
+
+    vector<Automata *> lexAnalyzer = vector<Automata *>();
+    for (auto const &rule : rules)
+    {
+        wstring regex = rule.second;
+        wstring returnType = rule.first;
+        lexAnalyzer = addRegex(lexAnalyzer, regex, returnType);
+    }
+
+    Automata *mcythompson = joinAutomatas(lexAnalyzer);
+
+    printAutomata(mcythompson);
+    generateGraph(mcythompson, L"LexicalAnalyzer");
 
     wcout << "Error Table" << endl;
     for (Symbol *symbol : ErrorTable)
