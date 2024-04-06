@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <cctype>
 #include "utils.h"
+#include "file.h"
 
 Stack<shuntingToken> postfix;
 Stack<shuntingToken> postfixAugmented;
@@ -377,6 +378,8 @@ Tables analyzeLexical(Automata *automata, wstring strText)
 
     return tables;
 }
+#include <cstdlib>
+#include <wx/filedlg.h>
 
 void MyFrame::OnYes(wxCommandEvent &event)
 {
@@ -583,8 +586,23 @@ void MyFrame::OnYes(wxCommandEvent &event)
 
     printAutomata(mcythompson);
     generateGraph(mcythompson, L"LexicalAnalyzer");
+    generateFile(rules, L"lexicalAnalyzer.cpp");
+    system("g++ -fopenmp lexicalAnalyzer.cpp -o lexicalAnalyzer");
 
-    wcout << "Error Table" << endl;
+    wxFileDialog openFileDialog(NULL, _("Open file"), "", "",
+                                "All files (*.*)|*.*", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+    if (openFileDialog.ShowModal() == wxID_CANCEL)
+        return; // the user changed their mind
+
+    // Proceed loading the file chosen by the user;
+    wxString path = openFileDialog.GetPath();
+
+    wxString command = "./lexicalAnalyzer " + path;
+
+    system(command.mb_str());
+
+    wcout
+        << "Error Table" << endl;
     for (Symbol *symbol : ErrorTable)
     {
         wcout << L"Token: " << symbol->value << L" Type: " << symbol->type << L" Line: " << symbol->numberLine << L" Column: " << symbol->numberColumn << endl;

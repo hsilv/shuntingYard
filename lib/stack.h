@@ -26,8 +26,6 @@ public:
     void reverse();
 };
 
-#include "stack.h"
-
 template <typename T>
 void Stack<T>::push(T const &value)
 {
