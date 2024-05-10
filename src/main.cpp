@@ -801,6 +801,7 @@ void MyFrame::OnYes(wxCommandEvent &event)
     grammar.start = start;
     grammar.nonTerminals = nonTerminals;
     grammar.terminals = terminals;
+    Grammar original = grammar;
     grammar = augment(grammar);
     /*  wcout << L"\nProducciones: " << endl;
      for (auto const &production : grammar.productions)
@@ -876,6 +877,35 @@ void MyFrame::OnYes(wxCommandEvent &event)
     } */
     LR0Automata lr0automata = build(grammar);
     generateLR0Graph(&lr0automata, L"LR0Automata");
+
+    set<wstring> visitedFirst;
+    set<wstring> visitedNext;
+
+    wcout << L"\nFunción primero y siguiente: " << endl;
+    for (const GrammarToken nonTerminal : original.nonTerminals)
+    {
+        set<GrammarToken> firstSet = first(original, nonTerminal, visitedFirst);
+        set<GrammarToken> nextSet = next(original, nonTerminal);
+
+        wcout << L"\nToken: " << nonTerminal.value << endl;
+        wcout << L"Primero: ";
+        for (const GrammarToken token : firstSet)
+        {
+            wcout << token.value << L" ";
+        }
+        wcout << endl;
+
+        wcout << L"Siguiente: ";
+        for (const GrammarToken token : nextSet)
+        {
+            wcout << token.value << L" ";
+        }
+        wcout << endl;
+
+        // Limpiar el conjunto visited para el próximo no terminal
+        visitedFirst.clear();
+        visitedNext.clear();
+    }
 }
 
 void MyFrame::OnExit(wxCommandEvent &event)

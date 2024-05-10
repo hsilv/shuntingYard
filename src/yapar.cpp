@@ -242,3 +242,87 @@ LR0Automata build(const Grammar &grammar)
 
     return automata;
 }
+
+set<GrammarToken> first(const Grammar &grammar, const GrammarToken &token, set<wstring> &visited)
+{
+    set<GrammarToken> result;
+
+    if (token.type == Terminal)
+    {
+        result.insert(token);
+    }
+    else if (token.type == NonTerminal)
+    {
+        // Evitar la recursión infinita
+        if (visited.find(token.value) != visited.end())
+        {
+            return result;
+        }
+        visited.insert(token.value);
+
+        for (GrammarProduction production : grammar.productions)
+        {
+            if (production.left.value == token.value)
+            {
+                if (!production.right.empty())
+                {
+                    if (production.right[0].type == Terminal)
+                    {
+                        result.insert(production.right[0]);
+                    }
+                    else if (production.right[0].type == NonTerminal)
+                    {
+                        set<GrammarToken> firstSet = first(grammar, production.right[0], visited);
+                        result.insert(firstSet.begin(), firstSet.end());
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}
+
+set<GrammarToken> next(const Grammar &grammar, const GrammarToken &token)
+{
+    set<GrammarToken> result;
+
+    // Si el token es igual al lado izquierdo de la primera producción, agregar "$"
+    if (grammar.productions[0].left.value == token.value)
+    {
+        GrammarToken dollar;
+        dollar.type = Special;
+        dollar.value = L"$";
+        result.insert(dollar);
+    }
+
+    if (token.type == Terminal)
+    {
+        return result;
+    }
+    else if (token.type == NonTerminal)
+    {
+        for (GrammarProduction production : grammar.productions)
+        {
+            for (int i = 0; i < production.right.size(); i++)
+            {
+                if (production.right[i].value == token.value)
+                {
+                    if (i + 1 < production.right.size())
+                    {
+                        // Agregar el conjunto first del token a la derecha del token actual al conjunto next
+                        set<wstring> visited;
+                        set<GrammarToken> firstSet = first(grammar, production.right[i + 1], visited);
+                        result.insert(firstSet.begin(), firstSet.end());
+                    }
+                    else
+                    {
+                        // Si el token es el último en la producción, añadir el conjunto next del lado izquierdo de la producción
+                        set<GrammarToken> nextSet = next(grammar, production.left);
+                        result.insert(nextSet.begin(), nextSet.end());
+                    }
+                }
+            }
+        }
+    }
+    return result;
+}
