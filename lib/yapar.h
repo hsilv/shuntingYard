@@ -4,6 +4,7 @@
 #include <set>
 #include <vector>
 #include <string>
+#include <map>
 
 using namespace std;
 
@@ -71,7 +72,24 @@ struct Grammar
     set<GrammarToken> nonTerminals;
     GrammarToken start;
 };
+
+struct LR0AutomataState
+{
+    wstring name;
+    set<GrammarProduction> productions;
+};
+
+struct LR0Automata
+{
+    vector<LR0AutomataState> states;
+    map<wstring, map<GrammarToken, wstring>> transitions;
+    vector<wstring> acceptanceStates;
+    LR0AutomataState *start;
+};
+
 Grammar augment(const Grammar &grammar);
 set<GrammarProduction> closure(const Grammar &grammar, const set<GrammarProduction> &I);
+set<GrammarProduction> gotoSet(const Grammar &grammar, const set<GrammarProduction> &I, const GrammarToken &X);
+LR0Automata build(const Grammar &grammar);
 
 #endif

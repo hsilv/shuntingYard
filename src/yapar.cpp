@@ -1,6 +1,9 @@
 #include "yapar.h"
 #include <set>
 #include <algorithm>
+#include <iostream>
+
+using namespace std;
 
 Grammar augment(const Grammar &grammar)
 {
@@ -65,4 +68,177 @@ set<GrammarProduction> closure(const Grammar &grammar, const set<GrammarProducti
         }
     }
     return J;
+}
+
+set<GrammarProduction> gotoSet(const Grammar &grammar, const set<GrammarProduction> &I, const GrammarToken &X)
+{
+    set<GrammarProduction> J;
+    for (const GrammarProduction &prod : I)
+    {
+        // Encuentra el punto una vez
+        auto dotPos = find_if(prod.right.begin(), prod.right.end(), [](const GrammarToken &token)
+                              { return token.type == Dot; });
+
+        if (dotPos != prod.right.end() && dotPos + 1 != prod.right.end() && (dotPos + 1)->value == X.value)
+        {
+            GrammarProduction newProd = prod;
+            // Crea una nueva producción con el punto movido a la derecha
+            iter_swap(newProd.right.begin() + (dotPos - prod.right.begin()), newProd.right.begin() + (dotPos - prod.right.begin() + 1));
+            newProd.type = Core;
+            J.insert(newProd);
+        }
+    }
+    return closure(grammar, J);
+}
+
+LR0Automata build(const Grammar &grammar)
+{
+    set<set<GrammarProduction>> C;
+    set<GrammarProduction> I0 = closure(grammar, {grammar.productions[0]});
+    C.insert(I0);
+
+    map<set<GrammarProduction>, wstring> setsToName;
+    map<wstring, set<GrammarProduction>> nameToSets;
+    map<wstring, map<GrammarToken, wstring>> transitions;
+    vector<wstring> acceptanceStates;
+    LR0Automata automata;
+
+    int stateCounter = 0;
+
+    bool changed = true;
+
+    while (changed)
+    {
+        changed = false;
+        for (set<GrammarProduction> I : C)
+        {
+            if (setsToName.find(I) == setsToName.end())
+            {
+                wstring name = L"I" + to_wstring(stateCounter++);
+                setsToName[I] = name;
+                nameToSets[name] = I;
+            }
+
+            wstring currentStateName = setsToName[I];
+
+            for (GrammarToken token : grammar.terminals)
+            {
+                set<GrammarProduction> J = gotoSet(grammar, I, token);
+                if (J.size() > 0)
+                {
+                    if (C.find(J) == C.end())
+                    {
+                        C.insert(J);
+                        changed = true;
+
+                        if (setsToName.find(J) == setsToName.end())
+                        {
+                            wstring name = L"I" + to_wstring(stateCounter++);
+                            setsToName[J] = name;
+                            nameToSets[name] = J;
+                        }
+                    }
+
+                    wstring nextStateName = setsToName[J];
+
+                    // Agregar transición
+                    transitions[currentStateName][token] = nextStateName;
+                }
+            }
+
+            for (GrammarToken token : grammar.nonTerminals)
+            {
+                set<GrammarProduction> J = gotoSet(grammar, I, token);
+                if (J.size() > 0)
+                {
+                    if (C.find(J) == C.end())
+                    {
+                        C.insert(J);
+                        changed = true;
+
+                        if (setsToName.find(J) == setsToName.end())
+                        {
+                            wstring name = L"I" + to_wstring(stateCounter++);
+                            setsToName[J] = name;
+                            nameToSets[name] = J;
+                        }
+                    }
+
+                    wstring nextStateName = setsToName[J];
+
+                    // Agregar transición
+                    transitions[currentStateName][token] = nextStateName;
+                }
+            }
+        }
+    }
+
+    vector<LR0AutomataState> states;
+    // Imprimir los sets y encontrar estados de aceptación
+    for (const auto &pair : setsToName)
+    {
+        const set<GrammarProduction> &productions = pair.first;
+        const wstring &name = pair.second;
+
+        wcout << name << ":\n";
+        bool isAcceptanceState = false;
+        for (const GrammarProduction &production : productions)
+        {
+            wcout << L"  " << production.left.value << L" -> ";
+            for (const GrammarToken &token : production.right)
+            {
+                wcout << token.value << L" ";
+            }
+            wcout << "\n";
+
+            if (production.left.value == grammar.productions[0].left.value &&
+                production.right.back().value == L".")
+            {
+                isAcceptanceState = true;
+            }
+        }
+
+        if (isAcceptanceState)
+        {
+            acceptanceStates.push_back(name);
+        }
+
+        // Agregar estado a la lista de estados
+        LR0AutomataState state;
+        state.name = name;
+        state.productions = productions;
+        states.push_back(state);
+    }
+
+    wcout << "\n";
+
+    // Imprimir las transiciones
+    wcout << L"Transiciones:\n";
+    for (const auto &pair : transitions)
+    {
+        const wstring &fromName = pair.first;
+        const map<GrammarToken, wstring> &toStates = pair.second;
+
+        for (const auto &toPair : toStates)
+        {
+            const GrammarToken &token = toPair.first;
+            const wstring &toName = toPair.second;
+
+            wcout << fromName << L"-" << token.value << L"->" << toName << "\n";
+        }
+    }
+
+    automata.start = &states[0];
+    automata.states = states;
+    automata.transitions = transitions;
+    automata.acceptanceStates = acceptanceStates;
+
+    // Imprimir los estados de aceptación
+    wcout << L"Estados de aceptación:\n";
+    for (const wstring &state : acceptanceStates)
+    {
+        wcout << state << "\n";
+    }
+
+    return automata;
 }

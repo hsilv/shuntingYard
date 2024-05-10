@@ -2,22 +2,25 @@
 
 /* INICIA sección de TOKENS */
 
-%token PERCENTAGE
-%token IFSTATEMENT
+%token OPEN CLOSE ID PLUS ASTERISK
 
 /* FINALIZA sección de TOKENS */
 
 %%
 
-production1:
-    production1 PERCENTAGE
-    | production2
+e:
+e PLUS t
+| t
 ;
 
-production2:
-    production1 IFSTATEMENT
-|   IFSTATEMENT;
+t:
+t ASTERISK f
+| f
+;
 
+f:
+OPEN e CLOSE
+| ID;
 
 
 

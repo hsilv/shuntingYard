@@ -1,9 +1,14 @@
-let percentage = %
-let ifStatement = 'if'
+let open = '('
+let close = ')'
+let id = 'id'
 
 rule getTokens =
-percentage { return PERCENTAGE }
-ifStatement { return IFSTATEMENT }
+open {return OPEN}
+| close { return CLOSE }
+| id { return ID }
+| '+' { return PLUS }
+| '*' { return ASTERISK }
+
 
 
 
