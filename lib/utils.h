@@ -5,5 +5,6 @@
 using namespace std;
 
 wstring cleanText(wstring text);
+wstring cleanYaPar(wstring text);
 
 #endif

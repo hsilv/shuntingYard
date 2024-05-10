@@ -4,12 +4,16 @@
 #include <wx/textfile.h>
 #include <wx/notebook.h>
 #include "symboltable.h"
-#include "shunting.h"
 #include <chrono>
 #include <iostream>
 #include <thread>
 #include <vector>
 #include <string>
+#include <algorithm>
+#include <cctype>
+#include "utils.h"
+#include "file.h"
+#include "shunting.h"
 #include "automata.h"
 #include "tree.h"
 #include "thompson.h"
@@ -18,14 +22,12 @@
 #include "direct.h"
 #include "minification.h"
 #include "simulation.h"
-#include <algorithm>
-#include <cctype>
-#include "utils.h"
-#include "file.h"
+#include "yapar.h"
 
 Stack<shuntingToken> postfix;
 Stack<shuntingToken> postfixAugmented;
 Automata *automatas;
+Automata *yapar;
 
 struct Tables
 {
@@ -35,12 +37,26 @@ struct Tables
 
 vector<Automata *> addRegex(vector<Automata *> automatas, wstring regex, wstring returnType)
 {
-    postfix = shuntingYard(regex.c_str());
-    TreeNode *tree = constructSyntaxTree(&postfix);
-    wstring alphabet = getAlphabet(&postfix);
-    Automata *mcythompson = thompson(tree, alphabet);
-    mcythompson = addReturnType(mcythompson, returnType);
-    automatas.push_back(mcythompson);
+    try
+    {
+        wcout << L"Regex: " << regex << endl;
+        postfix = shuntingYard(regex.c_str());
+        wcout << L"Shunting Construido" << endl;
+        TreeNode *tree = constructSyntaxTree(&postfix);
+        wcout << L"Sintaxis" << endl;
+        wstring alphabet = getAlphabet(&postfix);
+        wcout << L"Alfabeto" << endl;
+        Automata *mcythompson = thompson(tree, alphabet);
+        wcout << L"Autómata" << endl;
+        mcythompson = addReturnType(mcythompson, returnType);
+        wcout << L"Returned" << endl;
+        automatas.push_back(mcythompson);
+    }
+    catch (const std::exception &e)
+    {
+        // Manejar la excepción aquí
+        std::cerr << "Excepción capturada: " << e.what() << '\n';
+    }
     return automatas;
 }
 
@@ -65,6 +81,8 @@ Automata *configYalexAutomata()
     automatas = addRegex(automatas, L"\\*", L"Asterisk");
     automatas = addRegex(automatas, L"\\?", L"Question Mark");
     automatas = addRegex(automatas, L";", L"Semicolon");
+    automatas = addRegex(automatas, L":", L"Colon");
+    automatas = addRegex(automatas, L"%", L"Percent");
     automatas = addRegex(automatas, L"\\|", L"Vertical Bar");
     automatas = addRegex(automatas, L"\\\\", L"Backslash");
     automatas = addRegex(automatas, L"/", L"Slash");
@@ -77,12 +95,27 @@ Automata *configYalexAutomata()
     automatas = addRegex(automatas, L"rule( )+", L"Rule");
     automatas = addRegex(automatas, L"\"", L"Double Quote");
     automatas = addRegex(automatas, L"\'", L"Single Quote");
-    automatas = addRegex(automatas, L"\"([a-z]|[A-Z]|[0-9]|\\\\| |\\*|\\?|\\+|\\.|\\-|\\>|\\<|\\=|:|_|\'|\\(|\\)|/| )+\"", L"String Character");
-    automatas = addRegex(automatas, L"\'([a-z]|[A-Z]|[0-9]|\\\\| |\\*|\\?|\\+|\\.|\\-|\\>|\\<|\\=|:|_|\"|\\(|\\)|/| )+\'", L"Regular Character");
+    automatas = addRegex(automatas, L"\"([a-z]|[A-Z]|[0-9]|\\\\| |\\*|\\?|\\+|\\.|\\-|\\>|\\<|\\=|:|_|\'|\\(|\\)|/| |;|%|$)+\"", L"String Character");
+    automatas = addRegex(automatas, L"\'([a-z]|[A-Z]|[0-9]|\\\\| |\\*|\\?|\\+|\\.|\\-|\\>|\\<|\\=|:|_|\"|\\(|\\)|/| |;|%|$)+\'", L"Regular Character");
     automatas = addRegex(automatas, L"([a-z]|[A-Z])+([a-z]|[A-Z]|[0-9])*", L"Identifier");
     automatas = addRegex(automatas, L"entrypoint", L"Entrypoint");
     automatas = addRegex(automatas, L"eof", L"End of File");
     /* automatas = addRegex(automatas, L"[0-9]*", L"Number"); */
+    return joinAutomatas(automatas);
+}
+
+Automata *configYaParAutomata()
+{
+    vector<Automata *> automatas;
+    automatas = addRegex(automatas, L"%", L"Percent");
+    automatas = addRegex(automatas, L" ", L"Space");
+    automatas = addRegex(automatas, L"token", L"Token Statement");
+    automatas = addRegex(automatas, L"([A-Z])+(_|[0-9])*", L"Token Identifier");
+    automatas = addRegex(automatas, L"([a-z])+(_|[0-9])*", L"Production Identifier");
+    automatas = addRegex(automatas, L":", L"Colon");
+    automatas = addRegex(automatas, L"\\|", L"Vertical Bar");
+    automatas = addRegex(automatas, L";", L"Semicolon");
+    automatas = addRegex(automatas, L"\n", L"Line Break");
     return joinAutomatas(automatas);
 }
 
@@ -141,6 +174,9 @@ bool MyApp::OnInit()
     automatas = configYalexAutomata();
     printAutomata(automatas);
     /* generateGraph(automatas, L"YaLex"); */
+
+    yapar = configYaParAutomata();
+    printAutomata(yapar);
     MyFrame *frame = new MyFrame("Code Editor");
     frame->Show(true);
     return true;
@@ -171,7 +207,7 @@ MyFrame::MyFrame(const wxString &title)
     wxMenu *codeMenu = new wxMenu;
 
     // Agrega elementos al menú Code
-    codeMenu->Append(wxID_YES, "&Build Lexical Analyzer");
+    codeMenu->Append(wxID_YES, "&Build");
 
     // Crea una nueva barra de menú
     wxMenuBar *menuBar = new wxMenuBar;
@@ -212,7 +248,7 @@ Tables analyzeLexical(Automata *automata, wstring strText)
     wstring latestAcceptedSymbol = L"";
 
     // Define los delimitadores
-    wstring delimiters = L"\t\n";
+    wstring delimiters = L"\t\n ";
 
     vector<wstring> tokens;
     size_t startString = 0;
@@ -400,15 +436,28 @@ void MyFrame::OnYes(wxCommandEvent &event)
     wcout << endl;
     wcout << "Symbol Table" << endl;
 
-    // Elimina los tokens de tipo "Line Break" de la tabla de símbolos
-    /* SymbolTable.erase(std::remove_if(SymbolTable.begin(), SymbolTable.end(),
-                                     [](Symbol *symbol)
-                                     { return wcscmp(symbol->type, L"Line Break") == 0; }),
-                      SymbolTable.end()); */
-
     for (Symbol *symbol : SymbolTable)
     {
         wcout << L"Token: " << symbol->value << L" Type: " << symbol->type << L" Line: " << symbol->numberLine << L" Column: " << symbol->numberColumn << endl;
+    }
+
+    int currentPageIndex = notebook->GetSelection();
+    int nextPageIndex = currentPageIndex + 1;
+
+    wstring nextText;
+
+    // Verifica si la página siguiente existe
+    if (nextPageIndex < notebook->GetPageCount())
+    {
+        wxStyledTextCtrl *nextTextCtrl = (wxStyledTextCtrl *)notebook->GetPage(nextPageIndex);
+        wxString pageText = nextTextCtrl->GetText();
+        nextText = wstring(pageText.wc_str());
+    }
+    else
+    {
+        // Lanzar una excepción que diga que hace falta que abras una página en yapar
+        wcout << "YaPar page not found" << endl;
+        throw std::runtime_error("YaPar page not found");
     }
 
     std::vector<Symbol *>::iterator current = SymbolTable.begin();
@@ -577,6 +626,10 @@ void MyFrame::OnYes(wxCommandEvent &event)
     vector<Automata *> lexAnalyzer = vector<Automata *>();
     for (auto const &rule : rules)
     {
+        if (&rule == nullptr)
+        {
+            continue;
+        }
         wstring regex = rule.second;
         wstring returnType = rule.first;
         lexAnalyzer = addRegex(lexAnalyzer, regex, returnType);
@@ -586,26 +639,208 @@ void MyFrame::OnYes(wxCommandEvent &event)
 
     printAutomata(mcythompson);
     generateGraph(mcythompson, L"LexicalAnalyzer");
-    generateFile(rules, L"lexicalAnalyzer.cpp");
-    system("g++ -fopenmp lexicalAnalyzer.cpp -o lexicalAnalyzer");
-
-    wxFileDialog openFileDialog(NULL, _("Open file"), "", "",
-                                "All files (*.*)|*.*", wxFD_OPEN | wxFD_FILE_MUST_EXIST);
-    if (openFileDialog.ShowModal() == wxID_CANCEL)
-        return; // the user changed their mind
-
-    // Proceed loading the file chosen by the user;
-    wxString path = openFileDialog.GetPath();
-
-    wxString command = "./lexicalAnalyzer " + path;
-
-    system(command.mb_str());
 
     wcout
         << "Error Table" << endl;
     for (Symbol *symbol : ErrorTable)
     {
         wcout << L"Token: " << symbol->value << L" Type: " << symbol->type << L" Line: " << symbol->numberLine << L" Column: " << symbol->numberColumn << endl;
+    }
+
+    nextText = cleanYaPar(nextText);
+    wcout << nextText << endl;
+
+    Tables yaparTables = analyzeLexical(yapar, nextText);
+
+    /*     for (Symbol *symbol : yaparTables.SymbolTable)
+        {
+            wcout << L"Token: " << symbol->value << L" Type: " << symbol->type << L" Line: " << symbol->numberLine << L" Column: " << symbol->numberColumn << endl;
+        } */
+
+    std::vector<Symbol *>::iterator yaparCurrent = yaparTables.SymbolTable.begin();
+    std::vector<Symbol *>::iterator yaparEof = yaparTables.SymbolTable.end();
+    bool tokenSection = true;
+    bool waitingTokenStatement = false;
+    bool waitingColon = false;
+    bool inProduction = false;
+    Grammar grammar;
+    GrammarToken start;
+    GrammarToken productionHeader;
+    vector<GrammarToken> productionBody;
+
+    map<wstring, wstring> yaparTerminals;
+
+    set<GrammarToken> terminals;
+    set<GrammarToken> nonTerminals;
+
+    while (yaparCurrent != yaparEof)
+    {
+        Symbol *symbol = *yaparCurrent;
+        /* wcout << L"Token: " << symbol->value << L" Type: " << symbol->type << L" Line: " << symbol->numberLine << L" Column: " << symbol->numberColumn << endl; */
+        if (wcscmp(symbol->type, L"Percent") == 0)
+        {
+            if (waitingTokenStatement)
+            {
+                tokenSection = false;
+            }
+            else
+            {
+                waitingTokenStatement = true;
+            }
+            /* wcout << L"Token Section: " << tokenSection << endl; */
+        }
+        else if (tokenSection && waitingTokenStatement && wcscmp(symbol->type, L"Token Statement") == 0)
+        {
+            waitingTokenStatement = false;
+        }
+        else if (tokenSection && !waitingTokenStatement && wcscmp(symbol->type, L"Token Identifier") == 0)
+        {
+            bool found = false;
+            std::wstring value(symbol->value);
+            std::wstring matchedRuleSecond;
+            for (auto const &rule : rules)
+            {
+                if (rule.first.find(value) != std::wstring::npos) // Usa la variable type
+                {
+                    found = true;
+                    matchedRuleSecond = rule.second;
+                    break;
+                }
+            }
+            if (!found)
+            {
+                wcout << L"Exception, Token Identifier NOT FOUND: " << value << endl;
+                throw std::runtime_error("Token identifier not found in rules");
+            }
+            else
+            {
+                yaparTerminals[value] = matchedRuleSecond;
+            }
+            /* wcout << L"Token Identifier: " << symbol->value << endl; */
+        }
+        else if (!tokenSection && !inProduction && wcscmp(symbol->type, L"Production Identifier") == 0)
+        {
+            waitingColon = true;
+            productionHeader.value = symbol->value;
+            productionHeader.type = NonTerminal;
+
+            if (start.value == L"")
+            {
+                start = productionHeader;
+            }
+            /* wcout << L"Insertando no terminal: " << symbol->value << L" " << nonTerminals.size() << endl; */
+            nonTerminals.insert(productionHeader);
+        }
+        else if (waitingColon && wcscmp(symbol->type, L"Colon") == 0)
+        {
+            waitingColon = false;
+            inProduction = true;
+        }
+        else if (!tokenSection && inProduction && wcscmp(symbol->type, L"Production Identifier") == 0)
+        {
+            GrammarToken token;
+            token.value = symbol->value;
+            token.type = NonTerminal;
+            /* if (nonTerminals.find(token) == nonTerminals.end())
+            {
+                wcout << L"Exception, Production Identifier NOT FOUND in nonTerminals: " << token.value << endl;
+                throw std::runtime_error("Production identifier not found in nonTerminals");
+            } */
+            productionBody.push_back(token);
+            nonTerminals.insert(token);
+            /*  wcout << L"Insertando no terminal: " << symbol->value << L" " << nonTerminals.size() << endl; */
+        }
+        else if (!tokenSection && inProduction && wcscmp(symbol->type, L"Token Identifier") == 0)
+        {
+            wstring value(symbol->value);
+            if (yaparTerminals.find(value) == yaparTerminals.end())
+            {
+                wcout << L"Exception, Token Identifier NOT FOUND in YaLex: " << value << endl;
+                throw std::runtime_error("Token identifier not found in YaLex");
+            }
+            value = yaparTerminals[value];
+            GrammarToken token;
+            token.value = value;
+            token.type = Terminal;
+            productionBody.push_back(token);
+            terminals.insert(token);
+        }
+        else if (!tokenSection && inProduction && (wcscmp(symbol->type, L"Vertical Bar") == 0 || wcscmp(symbol->type, L"Semicolon") == 0))
+        {
+            // Imprimir el cuerpo de la producción
+            /* wcout << L"Production Body: ";
+            for (auto const &token : productionBody)
+            {
+                wcout << token.value << L" ";
+            } */
+
+            GrammarProduction production;
+            production.left = productionHeader;
+            production.right = productionBody;
+            production.type = Core;
+            grammar.productions.push_back(production);
+            productionBody.clear();
+
+            if (wcscmp(symbol->type, L"Semicolon") == 0)
+            {
+                inProduction = false;
+            }
+        }
+        else if (!tokenSection && inProduction && wcscmp(symbol->type, L"Colon") == 0)
+        {
+            wcout << L"YaPar Colon Syntax Error" << endl;
+            throw std::runtime_error("YaPar Colon Syntax Error");
+        }
+        yaparCurrent++;
+    }
+
+    /* for (auto const &terminal : yaparTerminals)
+    {
+        wcout << terminal.first << L": " << terminal.second << endl;
+    } */
+    grammar.start = start;
+    grammar.nonTerminals = nonTerminals;
+    grammar.terminals = terminals;
+    grammar = augment(grammar);
+    wcout << L"\nProducciones: " << endl;
+    for (auto const &production : grammar.productions)
+    {
+        wcout << production.left.value << L" -> ";
+        for (auto const &token : production.right)
+        {
+            wcout << token.value << L" ";
+        }
+        wcout << endl;
+    }
+
+    wcout << L"\nSímbolo Inicial: " << grammar.start.value << endl;
+    wcout << L"\nTerminales: " << endl;
+    for (auto const &terminal : grammar.terminals)
+    {
+        wcout << terminal.value << endl;
+    }
+
+    wcout << endl;
+
+    wcout << L"No Terminales: " << endl;
+    for (auto const &nonTerminal : grammar.nonTerminals)
+    {
+        wcout << nonTerminal.value << endl;
+    }
+
+    set<GrammarProduction> toClosure;
+    toClosure.insert(grammar.productions.at(0));
+
+    set<GrammarProduction> closureSet = closure(grammar, toClosure);
+
+    for (auto const &production : closureSet)
+    {
+        wcout << production.left.value << L" -> ";
+        for (auto const &token : production.right)
+        {
+            wcout << token.value << L" ";
+        }
+        wcout << endl;
     }
 }
 

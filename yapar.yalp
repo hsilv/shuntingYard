@@ -1,0 +1,27 @@
+/* Definición de Parser */
+
+/* INICIA sección de TOKENS */
+
+%token PERCENTAGE
+%token IFSTATEMENT
+
+/* FINALIZA sección de TOKENS */
+
+%%
+
+production1:
+    production1 PERCENTAGE
+    | production2
+;
+
+production2:
+    production1 IFSTATEMENT
+|   IFSTATEMENT;
+
+
+
+
+
+
+
+

@@ -1,8 +1,11 @@
-(* ejemplo.yal Este generará una clase de caracteres para operaciones aritméticas *)
- {
- #include "arythmeticTokens"
- }
- rule  getArythmeticTokens [string] =
+let percentage = %
+let ifStatement = 'if'
+
+rule getTokens =
+percentage { return PERCENTAGE }
+ifStatement { return IFSTATEMENT }
+
+
 
 
 

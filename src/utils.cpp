@@ -59,3 +59,21 @@ wstring cleanText(wstring text)
     }
     return text;
 }
+
+wstring cleanYaPar(wstring text)
+{
+    size_t pos = 0;
+    while ((pos = text.find(L"/*", pos)) != wstring::npos)
+    {
+        size_t endPos = text.find(L"*/", pos);
+        if (endPos != wstring::npos)
+        {
+            text.erase(pos, endPos - pos + 2); // +2 to remove "*)"
+        }
+        else
+        {
+            break; // No closing "*)", so we break the loop
+        }
+    }
+    return text;
+}
