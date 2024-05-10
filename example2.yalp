@@ -1,0 +1,28 @@
+/* Definición de Parser */
+
+/* INICIA sección de TOKENS */
+
+%token INTEGER FLOAT
+%token PLUS MINUS ASTERISK DIVISION
+
+/* FINALIZA sección de TOKENS */
+
+%%
+
+start:
+start op start
+| comp
+;
+
+op:
+PLUS | MINUS | ASTERISK | DIVISION;
+
+comp:
+INTEGER op INTEGER
+| FLOAT op FLOAT
+| INTEGER op FLOAT
+| FLOAT op INTEGER
+;
+
+
+

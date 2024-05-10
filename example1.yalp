@@ -1,0 +1,36 @@
+/* Definición de Parser */
+
+/* INICIA sección de TOKENS */
+
+%token IF
+%token THEN
+%token EQUAL
+%token GREATER
+%token LOWER
+%token ELSE
+%token INSTRUCTION
+%token INT
+
+/* FINALIZA sección de TOKENS */
+
+%%
+
+start:
+IF start THEN INSTRUCTION ELSE INSTRUCTION
+| IF start THEN INSTRUCTION
+| IF comp THEN INSTRUCTION
+| IF comp THEN INSTRUCTION ELSE INSTRUCTION
+;
+
+comp:
+comp EQUAL comp
+| INT operators INT
+| INT
+;
+
+operators:
+EQUAL | GREATER | LOWER;
+
+
+
+

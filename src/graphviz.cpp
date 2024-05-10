@@ -143,6 +143,8 @@ void generateLR0Graph(LR0Automata *automata, wstring filename)
             {
                 string tokenValue = converter.to_bytes(token.value);
                 replaceAll(tokenValue, ".", "&#46;");
+                replaceAll(tokenValue, "<", "&lt;");
+                replaceAll(tokenValue, ">", "&gt;");
                 label << tokenValue << " ";
             }
             label << "</TD>";

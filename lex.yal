@@ -1,4 +1,0 @@
-{ header }
-let ident = [a-z]*
-
-

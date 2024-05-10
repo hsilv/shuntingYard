@@ -794,87 +794,12 @@ void MyFrame::OnYes(wxCommandEvent &event)
         yaparCurrent++;
     }
 
-    /* for (auto const &terminal : yaparTerminals)
-    {
-        wcout << terminal.first << L": " << terminal.second << endl;
-    } */
     grammar.start = start;
     grammar.nonTerminals = nonTerminals;
     grammar.terminals = terminals;
     Grammar original = grammar;
     grammar = augment(grammar);
-    /*  wcout << L"\nProducciones: " << endl;
-     for (auto const &production : grammar.productions)
-     {
-         wcout << production.left.value << L" -> ";
-         for (auto const &token : production.right)
-         {
-             wcout << token.value << L" ";
-         }
-         wcout << endl;
-     }
 
-     wcout << L"\nSímbolo Inicial: " << grammar.start.value << endl;
-     wcout << L"\nTerminales: " << endl;
-     for (auto const &terminal : grammar.terminals)
-     {
-         wcout << terminal.value << endl;
-     }
-
-     wcout << endl;
-
-     wcout << L"No Terminales: " << endl;
-     for (auto const &nonTerminal : grammar.nonTerminals)
-     {
-         wcout << nonTerminal.value << endl;
-     }
-
-     set<GrammarProduction> toClosure;
-     toClosure.insert(grammar.productions.at(0));
-
-     set<GrammarProduction> closureSet = closure(grammar, toClosure);
-
-     for (auto const &production : closureSet)
-     {
-         wcout << production.left.value << L" -> ";
-         for (auto const &token : production.right)
-         {
-             wcout << token.value << L" ";
-         }
-         wcout << endl;
-     } */
-
-    /* for (const GrammarToken terminal : grammar.nonTerminals)
-    {
-        wcout << L"Terminal: " << terminal.value << endl;
-        set<GrammarProduction> gotoset = gotoSet(grammar, closureSet, terminal);
-        wcout << L"\nGoto Set: " << gotoset.size() << endl;
-        for (auto const &production : gotoset)
-        {
-            wcout << production.left.value << L" -> ";
-            for (auto const &token : production.right)
-            {
-                wcout << token.value << L" ";
-            }
-            wcout << endl;
-        }
-    }
-
-    for (const GrammarToken terminal : grammar.terminals)
-    {
-        wcout << L"Terminal: " << terminal.value << endl;
-        set<GrammarProduction> gotoset = gotoSet(grammar, closureSet, terminal);
-        wcout << L"\nGoto Set: " << gotoset.size() << endl;
-        for (auto const &production : gotoset)
-        {
-            wcout << production.left.value << L" -> ";
-            for (auto const &token : production.right)
-            {
-                wcout << token.value << L" ";
-            }
-            wcout << endl;
-        }
-    } */
     LR0Automata lr0automata = build(grammar);
     generateLR0Graph(&lr0automata, L"LR0Automata");
 
