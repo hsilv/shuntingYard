@@ -92,7 +92,7 @@ Grammar augment(const Grammar &grammar);
 set<GrammarProduction> closure(const Grammar &grammar, const set<GrammarProduction> &I);
 set<GrammarProduction> gotoSet(const Grammar &grammar, const set<GrammarProduction> &I, const GrammarToken &X);
 LR0Automata build(const Grammar &grammar);
-set<GrammarToken> next(const Grammar &grammar, const GrammarToken &token);
+set<GrammarToken> next(const Grammar &grammar, const GrammarToken &token, set<wstring> &visited);
 set<GrammarToken> first(const Grammar &grammar, const GrammarToken &token, set<wstring> &visited);
 
 #endif

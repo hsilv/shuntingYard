@@ -810,7 +810,7 @@ void MyFrame::OnYes(wxCommandEvent &event)
     for (const GrammarToken nonTerminal : original.nonTerminals)
     {
         set<GrammarToken> firstSet = first(original, nonTerminal, visitedFirst);
-        set<GrammarToken> nextSet = next(original, nonTerminal);
+        set<GrammarToken> nextSet = next(original, nonTerminal, visitedNext);
 
         wcout << L"\nToken: " << nonTerminal.value << endl;
         wcout << L"Primero: ";

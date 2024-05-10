@@ -282,7 +282,7 @@ set<GrammarToken> first(const Grammar &grammar, const GrammarToken &token, set<w
     return result;
 }
 
-set<GrammarToken> next(const Grammar &grammar, const GrammarToken &token)
+set<GrammarToken> next(const Grammar &grammar, const GrammarToken &token, set<wstring> &visited)
 {
     set<GrammarToken> result;
 
@@ -310,15 +310,19 @@ set<GrammarToken> next(const Grammar &grammar, const GrammarToken &token)
                     if (i + 1 < production.right.size())
                     {
                         // Agregar el conjunto first del token a la derecha del token actual al conjunto next
-                        set<wstring> visited;
-                        set<GrammarToken> firstSet = first(grammar, production.right[i + 1], visited);
+                        set<wstring> visitedFirst;
+                        set<GrammarToken> firstSet = first(grammar, production.right[i + 1], visitedFirst);
                         result.insert(firstSet.begin(), firstSet.end());
                     }
                     else
                     {
                         // Si el token es el último en la producción, añadir el conjunto next del lado izquierdo de la producción
-                        set<GrammarToken> nextSet = next(grammar, production.left);
-                        result.insert(nextSet.begin(), nextSet.end());
+                        if (visited.find(production.left.value) == visited.end())
+                        {
+                            visited.insert(production.left.value);
+                            set<GrammarToken> nextSet = next(grammar, production.left, visited);
+                            result.insert(nextSet.begin(), nextSet.end());
+                        }
                     }
                 }
             }
